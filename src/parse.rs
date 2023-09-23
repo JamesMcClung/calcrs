@@ -34,4 +34,16 @@ mod tests {
         assert!(matches!(parse("+234")?.eval()?, Value::Integer(234)));
         Ok(())
     }
+
+    #[test]
+    fn parse_sum() -> Result<(), String> {
+        assert!(matches!(parse("1+4")?.eval()?, Value::Integer(5)));
+        assert!(matches!(parse("-4+19")?.eval()?, Value::Integer(15)));
+        assert!(matches!(parse("-20+1")?.eval()?, Value::Integer(-19)));
+        assert!(matches!(parse("0+3")?.eval()?, Value::Integer(3)));
+        assert!(matches!(parse("0+ -3")?.eval()?, Value::Integer(-3)));
+        assert!(matches!(parse("-6 + -2")?.eval()?, Value::Integer(-8)));
+        assert!(matches!(parse("+6 + +2")?.eval()?, Value::Integer(8)));
+        Ok(())
+    }
 }
