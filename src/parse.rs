@@ -1,8 +1,16 @@
 pub mod expr;
 
 pub use expr::{Expression, Value};
+use once_cell::sync::Lazy;
+use regex::Regex;
+
+static REGEX_INTEGER: Lazy<Regex> = Lazy::new(|| Regex::new(r"^(?:\+|-)?\d+$").unwrap());
 
 pub fn parse(expr: &str) -> Result<Expression, String> {
+    if REGEX_INTEGER.is_match(expr) {
+        let val = Value::Integer(expr.parse().unwrap());
+        return Ok(Expression::Constant(val));
+    }
     return Err(String::from(expr));
 }
 
