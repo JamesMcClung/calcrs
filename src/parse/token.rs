@@ -6,8 +6,46 @@ pub enum Token {
     Space,
 }
 
+enum Char {
+    Digit(char),
+    Letter(char),
+    Symbol(char),
+    Space,
+    Unknown(char),
+}
+
+impl Char {
+    fn new(c: char) -> Char {
+        if c.is_ascii_alphabetic() {
+            Char::Letter(c)
+        } else if c.is_ascii_digit() {
+            Char::Digit(c)
+        } else if c.is_ascii_punctuation() {
+            Char::Symbol(c)
+        } else if c.is_ascii_whitespace() {
+            Char::Space
+        } else {
+            Char::Unknown(c)
+        }
+    }
+}
+
 pub fn tokenize(expr: &str) -> Vec<Token> {
-    Vec::new()
+    let mut tokens = Vec::new();
+    for c in expr.chars().map(Char::new) {
+        match (tokens.last_mut(), c) {
+            (_, Char::Unknown(c)) => panic!("Unknown character: {c}"),
+            (Some(Token::Space), Char::Space) => (),
+            (_, Char::Space) => tokens.push(Token::Space),
+            (Some(Token::Identifier(s)), Char::Letter(c)) => s.push(c),
+            (Some(Token::Identifier(s)), Char::Digit(c)) => s.push(c),
+            (Some(Token::WholeNumber(s)), Char::Digit(c)) => s.push(c),
+            (_, Char::Digit(c)) => tokens.push(Token::WholeNumber(String::from(c))),
+            (_, Char::Letter(c)) => tokens.push(Token::Identifier(String::from(c))),
+            (_, Char::Symbol(c)) => tokens.push(Token::Operator(String::from(c))),
+        }
+    }
+    tokens
 }
 
 #[cfg(test)]
