@@ -1,4 +1,5 @@
 pub mod expr;
+pub mod token;
 
 pub use expr::{Expression, Value};
 use once_cell::sync::Lazy;
