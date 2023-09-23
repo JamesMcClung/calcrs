@@ -1,17 +1,25 @@
 pub mod expr;
+pub mod token;
 
 pub use expr::{Expression, Value};
-use once_cell::sync::Lazy;
-use regex::Regex;
-
-static REGEX_INTEGER: Lazy<Regex> = Lazy::new(|| Regex::new(r"^(?:\+|-)?\d+$").unwrap());
+use token::Token;
 
 pub fn parse(expr: &str) -> Result<Expression, String> {
-    if REGEX_INTEGER.is_match(expr) {
-        let val = Value::Integer(expr.parse().unwrap());
-        return Ok(Expression::Constant(val));
+    let tokens = token::tokenize(expr);
+    if let Some(expr) = try_parse_integer(&tokens) {
+        Ok(expr)
+    } else {
+        Err(String::from(expr))
     }
-    return Err(String::from(expr));
+}
+
+fn try_parse_integer(tokens: &Vec<Token>) -> Option<Expression> {
+    match &tokens[..] {
+        [Token::WholeNumber(num)] => Some(Expression::Constant(Value::Integer(num.parse().unwrap()))),
+        [Token::Operator(op), Token::WholeNumber(num)] if op == "+" => Some(Expression::Constant(Value::Integer(num.parse().unwrap()))),
+        [Token::Operator(op), Token::WholeNumber(num)] if op == "-" => Some(Expression::Constant(Value::Integer(-num.parse::<i64>().unwrap()))),
+        _ => None,
+    }
 }
 
 #[cfg(test)]
