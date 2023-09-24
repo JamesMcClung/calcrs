@@ -23,12 +23,13 @@ impl Prompter {
 pub struct LinesIter<'a> {
     prompter: &'a mut Prompter,
     stdout: RawTerminal<io::Stdout>,
+    history: Vec<String>,
 }
 
 impl<'a> LinesIter<'a> {
     fn new(prompter: &'a mut Prompter) -> Self {
         let stdout = io::stdout().into_raw_mode().expect("termion into_raw_mode error");
-        LinesIter { prompter, stdout }
+        LinesIter { prompter, stdout, history: Vec::new() }
     }
 
     fn flush(&mut self) {
@@ -61,6 +62,7 @@ impl<'a> Iterator for LinesIter<'a> {
             match c.expect("termion keys error") {
                 Key::Char('\n') => {
                     self.write("\n\r");
+                    self.history.push(input.clone());
                     return Some(input);
                 }
                 Key::Char(c) => {
