@@ -2,6 +2,12 @@ use std::io;
 
 pub struct Prompter;
 
+impl Prompter {
+    pub fn new() -> Self {
+        Prompter
+    }
+}
+
 impl Iterator for Prompter {
     type Item = String;
 
