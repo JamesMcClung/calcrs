@@ -78,6 +78,9 @@ mod tests {
         assert!(matches!(parse("0+ -3")?.eval()?, Value::Integer(-3)));
         assert!(matches!(parse("-6 + -2")?.eval()?, Value::Integer(-8)));
         assert!(matches!(parse("+6 + +2")?.eval()?, Value::Integer(8)));
+        assert!(matches!(parse("1 + 2 + 3")?.eval()?, Value::Integer(6)));
+        assert!(matches!(parse("-1 + 2 + 3")?.eval()?, Value::Integer(4)));
+        assert!(matches!(parse("1 + + 3"), Err(Error::SyntaxError(_))));
         Ok(())
     }
 }
