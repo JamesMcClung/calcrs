@@ -1,4 +1,4 @@
-use std::io;
+use std::io::{self, Write};
 
 use termion::event::Key;
 use termion::input::TermRead;
@@ -28,6 +28,10 @@ impl<'a> LinesIter<'a> {
         let stdout = io::stdout().into_raw_mode().expect("termion into_raw_mode error");
         LinesIter { prompter, stdout }
     }
+
+    fn flush(&mut self) {
+        self.stdout.flush().expect("flush error");
+    }
 }
 
 impl<'a> Iterator for LinesIter<'a> {
@@ -35,7 +39,7 @@ impl<'a> Iterator for LinesIter<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         print!("{}", &self.prompter.prompt);
-        io::Write::flush(&mut io::stdout()).expect("flush error");
+        self.flush();
 
         let mut input = String::new();
         for c in io::stdin().keys() {
