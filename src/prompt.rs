@@ -1,4 +1,5 @@
 use std::io;
+
 pub struct Prompt;
 
 impl Iterator for Prompt {
