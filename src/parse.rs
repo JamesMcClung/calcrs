@@ -7,7 +7,7 @@ pub use expr::{Expression, Value};
 use token::Token;
 
 pub fn parse(expr: &str) -> Result<Expression, Error> {
-    parse_tokens(&token::tokenize(expr))
+    parse_tokens(&token::tokenize(expr)?)
 }
 
 fn trim_spaces(mut tokens: &[Token]) -> &[Token] {
