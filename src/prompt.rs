@@ -9,8 +9,8 @@ impl Prompter {
         Prompter { prompt: String::from("> ") }
     }
 
-    pub fn lines(&mut self) -> &mut Self {
-        self
+    pub fn lines(&mut self) -> LinesIter {
+        LinesIter::new(self)
     }
 }
 
@@ -24,11 +24,11 @@ impl<'a> LinesIter<'a> {
     }
 }
 
-impl Iterator for Prompter {
+impl<'a> Iterator for LinesIter<'a> {
     type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
-        print!("{}", &self.prompt);
+        print!("{}", &self.prompter.prompt);
         io::Write::flush(&mut io::stdout()).expect("flush failed");
         let mut input = String::new();
         io::stdin().read_line(&mut input).expect("read_line failed");
