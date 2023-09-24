@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use super::Error;
 
 #[derive(Debug)]
@@ -24,11 +22,10 @@ impl Expression {
     }
 }
 
-impl Display for Value {
+impl std::fmt::Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Integer(num) => f.write_str(&format!("{num}"))?,
-        };
-        Ok(())
+        f.write_str(&match self {
+            Self::Integer(num) => format!("{num}"),
+        })
     }
 }
