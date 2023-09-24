@@ -14,6 +14,16 @@ impl Prompter {
     }
 }
 
+pub struct LinesIter<'a> {
+    prompter: &'a mut Prompter,
+}
+
+impl<'a> LinesIter<'a> {
+    fn new(prompter: &'a mut Prompter) -> Self {
+        LinesIter { prompter }
+    }
+}
+
 impl Iterator for Prompter {
     type Item = String;
 
