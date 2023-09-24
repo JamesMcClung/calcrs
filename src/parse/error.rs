@@ -1,4 +1,4 @@
-use super::Token;
+use super::token::{self, Token};
 
 #[derive(Debug)]
 pub enum Error {
@@ -11,7 +11,7 @@ impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&match self {
             Self::TokenizeError(c) => format!("TokenizeError: unknown character '{c}'"),
-            Self::SyntaxError(tokens) => format!("SyntaxError: invalid syntax {tokens:?}"),
+            Self::SyntaxError(tokens) => format!("SyntaxError: invalid syntax \"{}\"", token::detokenize(tokens)),
             Self::EvalError(s) => format!("EvalError: {s}"),
         })
     }
