@@ -6,6 +6,10 @@ impl Prompter {
     pub fn new() -> Self {
         Prompter
     }
+
+    pub fn lines(&mut self) -> &mut Self {
+        self
+    }
 }
 
 impl Iterator for Prompter {
