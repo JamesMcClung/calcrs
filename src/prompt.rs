@@ -1,5 +1,8 @@
 use std::io;
 
+use termion::event::Key;
+use termion::input::TermRead;
+
 pub struct Prompter {
     prompt: String,
 }
@@ -29,9 +32,16 @@ impl<'a> Iterator for LinesIter<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         print!("{}", &self.prompter.prompt);
-        io::Write::flush(&mut io::stdout()).expect("flush failed");
+        io::Write::flush(&mut io::stdout()).expect("flush error");
+
         let mut input = String::new();
-        io::stdin().read_line(&mut input).expect("read_line failed");
-        Some(input.trim().to_string())
+        for c in io::stdin().keys() {
+            match c.expect("termion keys error") {
+                Key::Char('\n') => return Some(input),
+                Key::Char(c) => input.push(c),
+                _ => (),
+            }
+        }
+        None
     }
 }
