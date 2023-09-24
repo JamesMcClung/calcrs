@@ -67,6 +67,12 @@ impl<'a> Iterator for LinesIter<'a> {
                     input.insert(cursor_pos, c);
                     cursor_pos += 1;
                 }
+                Key::Backspace => {
+                    if cursor_pos > 0 {
+                        cursor_pos -= 1;
+                        input.remove(cursor_pos);
+                    }
+                }
                 _ => (),
             }
             self.set_input_state(&input, cursor_pos);
