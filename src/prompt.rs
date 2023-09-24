@@ -2,6 +2,7 @@ use std::io;
 
 use termion::event::Key;
 use termion::input::TermRead;
+use termion::raw::{IntoRawMode, RawTerminal};
 
 pub struct Prompter {
     prompt: String,
@@ -19,11 +20,13 @@ impl Prompter {
 
 pub struct LinesIter<'a> {
     prompter: &'a mut Prompter,
+    stdout: RawTerminal<io::Stdout>,
 }
 
 impl<'a> LinesIter<'a> {
     fn new(prompter: &'a mut Prompter) -> Self {
-        LinesIter { prompter }
+        let stdout = io::stdout().into_raw_mode().expect("termion into_raw_mode error");
+        LinesIter { prompter, stdout }
     }
 }
 
