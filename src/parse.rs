@@ -8,7 +8,19 @@ pub fn parse(expr: &str) -> Result<Expression, String> {
     parse_tokens(&token::tokenize(expr))
 }
 
+fn trim_spaces(mut tokens: &[Token]) -> &[Token] {
+    if tokens.starts_with(&[Token::Space]) {
+        tokens = &tokens[1..];
+    }
+    if tokens.ends_with(&[Token::Space]) {
+        tokens = &tokens[..tokens.len() - 1];
+    }
+    tokens
+}
+
 pub fn parse_tokens(tokens: &[Token]) -> Result<Expression, String> {
+    let tokens = trim_spaces(tokens);
+
     if let Some(expr) = try_parse_integer(tokens) {
         Ok(expr)
     } else if let Some(expr) = try_parse_sum(tokens) {
