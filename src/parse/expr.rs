@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use super::Error;
+
 #[derive(Debug)]
 pub enum Expression {
     Constant(Value),
@@ -12,7 +14,7 @@ pub enum Value {
 }
 
 impl Expression {
-    pub fn eval(self) -> Result<Value, String> {
+    pub fn eval(self) -> Result<Value, Error> {
         match self {
             Self::Constant(c) => Ok(c),
             Self::Sum(left, right) => match (left.eval()?, right.eval()?) {
