@@ -13,8 +13,8 @@ pub fn parse(expr: &str) -> Result<Expression, String> {
     }
 }
 
-fn try_parse_integer(tokens: &Vec<Token>) -> Option<Expression> {
-    match &tokens[..] {
+fn try_parse_integer(tokens: &[Token]) -> Option<Expression> {
+    match tokens {
         [Token::WholeNumber(num)] => Some(Expression::Constant(Value::Integer(num.parse().unwrap()))),
         [Token::Operator(op), Token::WholeNumber(num)] if op == "+" => Some(Expression::Constant(Value::Integer(num.parse().unwrap()))),
         [Token::Operator(op), Token::WholeNumber(num)] if op == "-" => Some(Expression::Constant(Value::Integer(-num.parse::<i64>().unwrap()))),
