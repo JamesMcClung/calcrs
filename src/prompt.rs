@@ -1,5 +1,7 @@
 use std::io::{self, Write};
 
+use termion::clear;
+use termion::cursor;
 use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::{IntoRawMode, RawTerminal};
@@ -32,22 +34,30 @@ impl<'a> LinesIter<'a> {
     fn flush(&mut self) {
         self.stdout.flush().expect("flush error");
     }
+
+    fn set_input_state(&mut self, text: &str, cursor_pos: usize) {
+        let clear = clear::CurrentLine;
+        let prompt = &self.prompter.prompt;
+        let move_right = cursor::Right((prompt.len() + cursor_pos) as u16);
+        write!(self.stdout, "\r{clear}{prompt}{text}\r{move_right}").expect("write error");
+        self.flush();
+    }
 }
 
 impl<'a> Iterator for LinesIter<'a> {
     type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
-        print!("{}", &self.prompter.prompt);
-        self.flush();
-
         let mut input = String::new();
+        self.set_input_state(&input, input.len());
+
         for c in io::stdin().keys() {
             match c.expect("termion keys error") {
                 Key::Char('\n') => return Some(input),
                 Key::Char(c) => input.push(c),
                 _ => (),
             }
+            self.set_input_state(&input, input.len());
         }
         None
     }
