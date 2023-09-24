@@ -55,6 +55,7 @@ impl<'a> Iterator for LinesIter<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut input = String::new();
+        let mut line_pos = self.history.len();
         let mut cursor_pos = 0usize;
         self.set_input_state(&input, cursor_pos);
 
@@ -62,14 +63,24 @@ impl<'a> Iterator for LinesIter<'a> {
             match c.expect("termion keys error") {
                 Key::Char('\n') => {
                     self.write("\n\r");
-                    self.history.push(input.clone());
-                    return Some(input);
+                    if line_pos == self.history.len() {
+                        self.history.push(input);
+                    }
+                    return Some(self.history[line_pos].clone());
                 }
                 Key::Char(c) => {
+                    if line_pos < self.history.len() {
+                        input = self.history[line_pos].clone();
+                        line_pos = self.history.len();
+                    }
                     input.insert(cursor_pos, c);
                     cursor_pos += 1;
                 }
                 Key::Backspace => {
+                    if line_pos < self.history.len() {
+                        input = self.history[line_pos].clone();
+                        line_pos = self.history.len();
+                    }
                     if cursor_pos > 0 {
                         cursor_pos -= 1;
                         input.remove(cursor_pos);
@@ -81,13 +92,33 @@ impl<'a> Iterator for LinesIter<'a> {
                     }
                 }
                 Key::Right => {
-                    if cursor_pos < input.len() {
+                    if cursor_pos < self.history.get(line_pos).unwrap_or(&input).len() {
                         cursor_pos += 1;
+                    }
+                }
+                Key::Up => {
+                    if line_pos > 0 {
+                        let prev_line_len = self.history.get(line_pos).unwrap_or(&input).len();
+                        line_pos -= 1;
+                        let curr_line_len = self.history[line_pos].len();
+                        if cursor_pos == prev_line_len || cursor_pos > curr_line_len {
+                            cursor_pos = curr_line_len;
+                        }
+                    }
+                }
+                Key::Down => {
+                    if line_pos < self.history.len() {
+                        let prev_line_len = self.history[line_pos].len();
+                        line_pos += 1;
+                        let curr_line_len = self.history.get(line_pos).unwrap_or(&input).len();
+                        if cursor_pos == prev_line_len || cursor_pos > curr_line_len {
+                            cursor_pos = curr_line_len;
+                        }
                     }
                 }
                 _ => (),
             }
-            self.set_input_state(&input, cursor_pos);
+            self.set_input_state(&self.history.get(line_pos).unwrap_or(&input).clone(), cursor_pos);
         }
         None
     }
