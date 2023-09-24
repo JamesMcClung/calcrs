@@ -50,6 +50,18 @@ pub fn tokenize(expr: &str) -> Result<Vec<Token>, Error> {
     Ok(tokens)
 }
 
+pub fn detokenize(tokens: &[Token]) -> String {
+    tokens
+        .iter()
+        .map(|token| match token {
+            Token::Identifier(id) => &id,
+            Token::Operator(op) => &op,
+            Token::WholeNumber(num) => &num,
+            Token::Space => " ",
+        })
+        .collect::<String>()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
