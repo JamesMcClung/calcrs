@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use super::Error;
 
 #[derive(Debug)]
 pub enum Expression {
@@ -12,7 +12,7 @@ pub enum Value {
 }
 
 impl Expression {
-    pub fn eval(self) -> Result<Value, String> {
+    pub fn eval(self) -> Result<Value, Error> {
         match self {
             Self::Constant(c) => Ok(c),
             Self::Sum(left, right) => match (left.eval()?, right.eval()?) {
@@ -22,11 +22,10 @@ impl Expression {
     }
 }
 
-impl Display for Value {
+impl std::fmt::Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Integer(num) => f.write_str(&format!("{num}"))?,
-        };
-        Ok(())
+        f.write_str(&match self {
+            Self::Integer(num) => format!("{num}"),
+        })
     }
 }
