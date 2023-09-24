@@ -25,7 +25,7 @@ pub fn parse_tokens(tokens: &[Token]) -> Result<Expression, Error> {
 
     if let Some(expr) = try_parse_integer(tokens) {
         Ok(expr)
-    } else if let Some(expr) = try_parse_sum(tokens) {
+    } else if let Some(expr) = try_parse_sum(tokens)? {
         Ok(expr)
     } else {
         Err(Error::SyntaxError(tokens.to_vec()))
@@ -41,19 +41,19 @@ fn try_parse_integer(tokens: &[Token]) -> Option<Expression> {
     }
 }
 
-fn try_parse_sum(tokens: &[Token]) -> Option<Expression> {
+fn try_parse_sum(tokens: &[Token]) -> Result<Option<Expression>, Error> {
     if tokens.len() < 3 {
-        return None;
+        return Ok(None);
     }
     for i in 1..(tokens.len() - 1) {
         match (&tokens[i - 1], &tokens[i], &tokens[i + 1]) {
             (Token::Operator(_), _, _) => (),
             (_, _, Token::Operator(_)) => (),
-            (_, Token::Operator(op), _) if op == "+" => return Some(Expression::Sum(Box::new(parse_tokens(&tokens[..i]).unwrap()), Box::new(parse_tokens(&tokens[i + 1..]).unwrap()))),
+            (_, Token::Operator(op), _) if op == "+" => return Ok(Some(Expression::Sum(Box::new(parse_tokens(&tokens[..i])?), Box::new(parse_tokens(&tokens[i + 1..])?)))),
             _ => (),
         }
     }
-    None
+    Ok(None)
 }
 
 #[cfg(test)]
