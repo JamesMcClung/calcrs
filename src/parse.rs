@@ -23,7 +23,7 @@ fn trim_spaces(mut tokens: &[Token]) -> &[Token] {
 pub fn parse_tokens(tokens: &[Token]) -> Result<Expression, Error> {
     let tokens = trim_spaces(tokens);
 
-    if let Some(expr) = try_parse_integer(tokens) {
+    if let Some(expr) = try_parse_integer(tokens)? {
         Ok(expr)
     } else if let Some(expr) = try_parse_sum(tokens)? {
         Ok(expr)
@@ -32,13 +32,13 @@ pub fn parse_tokens(tokens: &[Token]) -> Result<Expression, Error> {
     }
 }
 
-fn try_parse_integer(tokens: &[Token]) -> Option<Expression> {
-    match tokens {
+fn try_parse_integer(tokens: &[Token]) -> Result<Option<Expression>, Error> {
+    Ok(match tokens {
         [Token::WholeNumber(num)] => Some(Expression::Constant(Value::Integer(num.parse().unwrap()))),
         [Token::Operator(op), Token::WholeNumber(num)] if op == "+" => Some(Expression::Constant(Value::Integer(num.parse().unwrap()))),
         [Token::Operator(op), Token::WholeNumber(num)] if op == "-" => Some(Expression::Constant(Value::Integer(-num.parse::<i64>().unwrap()))),
         _ => None,
-    }
+    })
 }
 
 fn try_parse_sum(tokens: &[Token]) -> Result<Option<Expression>, Error> {
