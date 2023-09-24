@@ -1,8 +1,8 @@
 use std::io;
 
-pub struct Prompt;
+pub struct Prompter;
 
-impl Iterator for Prompt {
+impl Iterator for Prompter {
     type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {

@@ -2,7 +2,7 @@ pub mod parse;
 pub mod prompt;
 
 fn main() {
-    for input in prompt::Prompt {
+    for input in prompt::Prompter {
         if input.is_empty() {
             return;
         }
