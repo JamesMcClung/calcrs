@@ -3,6 +3,7 @@ use std::fmt::Display;
 #[derive(Debug)]
 pub enum Expression {
     Constant(Value),
+    Sum(Box<Expression>, Box<Expression>),
 }
 
 #[derive(Debug)]
@@ -14,6 +15,9 @@ impl Expression {
     pub fn eval(self) -> Result<Value, String> {
         match self {
             Self::Constant(c) => Ok(c),
+            Self::Sum(left, right) => match (left.eval()?, right.eval()?) {
+                (Value::Integer(left), Value::Integer(right)) => Ok(Value::Integer(left + right)),
+            },
         }
     }
 }
