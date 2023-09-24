@@ -54,7 +54,8 @@ impl<'a> Iterator for LinesIter<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut input = String::new();
-        self.set_input_state(&input, input.len());
+        let mut cursor_pos = 0usize;
+        self.set_input_state(&input, cursor_pos);
 
         for c in io::stdin().keys() {
             match c.expect("termion keys error") {
@@ -62,10 +63,13 @@ impl<'a> Iterator for LinesIter<'a> {
                     self.write("\n\r");
                     return Some(input);
                 }
-                Key::Char(c) => input.push(c),
+                Key::Char(c) => {
+                    input.insert(cursor_pos, c);
+                    cursor_pos += 1;
+                }
                 _ => (),
             }
-            self.set_input_state(&input, input.len());
+            self.set_input_state(&input, cursor_pos);
         }
         None
     }
