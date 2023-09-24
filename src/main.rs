@@ -7,7 +7,10 @@ fn main() {
             return;
         }
         match parse::parse(&input) {
-            Ok(expr) => println!("{}", expr.eval().unwrap()),
+            Ok(expr) => match expr.eval() {
+                Ok(val) => println!("{val}"),
+                Err(err) => println!("{err}"),
+            },
             Err(err) => println!("{err}"),
         }
     }
