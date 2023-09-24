@@ -8,9 +8,7 @@ fn main() {
         }
         match parse::parse(&input) {
             Ok(expr) => println!("{}", expr.eval().unwrap()),
-            Err(expr) => {
-                println!("Couldn't parse: {expr}")
-            }
+            Err(err) => println!("{err}"),
         }
     }
 }
