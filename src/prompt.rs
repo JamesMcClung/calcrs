@@ -116,6 +116,42 @@ impl<'a> Iterator for LinesIter<'a> {
                         }
                     }
                 }
+                Key::Alt('b') => {
+                    // Mac: produced by Option-Left
+                    let curr_line = self.history.get(line_pos).unwrap_or(&input);
+                    let mut set_pos = false;
+                    let mut in_word = false;
+                    for (i, c) in curr_line.char_indices().rev().skip(curr_line.len() - cursor_pos) {
+                        if c.is_ascii_alphanumeric() {
+                            in_word = true;
+                        } else if in_word {
+                            cursor_pos = i + 1;
+                            set_pos = true;
+                            break;
+                        }
+                    }
+                    if !set_pos {
+                        cursor_pos = 0;
+                    }
+                }
+                Key::Alt('f') => {
+                    // Mac: produced by Option-Right
+                    let curr_line = self.history.get(line_pos).unwrap_or(&input);
+                    let mut set_pos = false;
+                    let mut in_word = false;
+                    for (i, c) in curr_line.char_indices().skip(cursor_pos) {
+                        if c.is_ascii_alphanumeric() {
+                            in_word = true;
+                        } else if in_word {
+                            cursor_pos = i;
+                            set_pos = true;
+                            break;
+                        }
+                    }
+                    if !set_pos {
+                        cursor_pos = curr_line.len();
+                    }
+                }
                 Key::Ctrl('a') => {
                     // Mac: produced by Command-Left
                     cursor_pos = 0;
