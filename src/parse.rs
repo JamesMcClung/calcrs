@@ -5,11 +5,14 @@ pub use expr::{Expression, Value};
 use token::Token;
 
 pub fn parse(expr: &str) -> Result<Expression, String> {
-    let tokens = token::tokenize(expr);
-    if let Some(expr) = try_parse_integer(&tokens) {
+    parse_tokens(&token::tokenize(expr))
+}
+
+pub fn parse_tokens(tokens: &[Token]) -> Result<Expression, String> {
+    if let Some(expr) = try_parse_integer(tokens) {
         Ok(expr)
     } else {
-        Err(String::from(expr))
+        Err(format!("Failed to parse: {tokens:?}"))
     }
 }
 
