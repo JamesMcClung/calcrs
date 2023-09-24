@@ -116,6 +116,14 @@ impl<'a> Iterator for LinesIter<'a> {
                         }
                     }
                 }
+                Key::Ctrl('a') => {
+                    // Mac: produced by Command-Left
+                    cursor_pos = 0;
+                }
+                Key::Ctrl('e') => {
+                    // Mac: produced by Command-Right
+                    cursor_pos = self.history.get(line_pos).unwrap_or(&input).len();
+                }
                 _ => (),
             }
             self.set_input_state(&self.history.get(line_pos).unwrap_or(&input).clone(), cursor_pos);
