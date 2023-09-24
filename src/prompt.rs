@@ -35,6 +35,11 @@ impl<'a> LinesIter<'a> {
         self.stdout.flush().expect("flush error");
     }
 
+    fn write(&mut self, text: &str) {
+        write!(self.stdout, "{text}").expect("write error");
+        self.flush();
+    }
+
     fn set_input_state(&mut self, text: &str, cursor_pos: usize) {
         let clear = clear::CurrentLine;
         let prompt = &self.prompter.prompt;
@@ -53,7 +58,10 @@ impl<'a> Iterator for LinesIter<'a> {
 
         for c in io::stdin().keys() {
             match c.expect("termion keys error") {
-                Key::Char('\n') => return Some(input),
+                Key::Char('\n') => {
+                    self.write("\n\r");
+                    return Some(input);
+                }
                 Key::Char(c) => input.push(c),
                 _ => (),
             }
