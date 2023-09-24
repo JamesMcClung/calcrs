@@ -73,6 +73,16 @@ impl<'a> Iterator for LinesIter<'a> {
                         input.remove(cursor_pos);
                     }
                 }
+                Key::Left => {
+                    if cursor_pos > 0 {
+                        cursor_pos -= 1;
+                    }
+                }
+                Key::Right => {
+                    if cursor_pos < input.len() {
+                        cursor_pos += 1;
+                    }
+                }
                 _ => (),
             }
             self.set_input_state(&input, cursor_pos);
