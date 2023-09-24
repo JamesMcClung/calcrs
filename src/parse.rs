@@ -40,6 +40,9 @@ fn try_parse_integer(tokens: &[Token]) -> Option<Expression> {
 }
 
 fn try_parse_sum(tokens: &[Token]) -> Option<Expression> {
+    if tokens.len() < 3 {
+        return None;
+    }
     for i in 1..(tokens.len() - 1) {
         match (&tokens[i - 1], &tokens[i], &tokens[i + 1]) {
             (Token::Operator(_), _, _) => (),
