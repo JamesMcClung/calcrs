@@ -1,8 +1,12 @@
 pub mod parse;
 pub mod prompt;
 
+use prompt::Prompter;
+
 fn main() {
-    for input in prompt::Prompt {
+    let mut prompter = Prompter::new();
+
+    for input in prompter.lines() {
         if input.is_empty() {
             return;
         }
