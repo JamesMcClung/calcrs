@@ -68,7 +68,7 @@ impl<'a> Iterator for LinesIter<'a> {
                     }
                     return Some(self.history[line_pos].clone());
                 }
-                Key::Char(c) => {
+                Key::Char(c) if c.is_ascii() => {
                     if line_pos < self.history.len() {
                         input = self.history[line_pos].clone();
                         line_pos = self.history.len();
@@ -159,6 +159,43 @@ impl<'a> Iterator for LinesIter<'a> {
                 Key::Ctrl('e') => {
                     // Mac: produced by Command-Right
                     cursor_pos = self.history.get(line_pos).unwrap_or(&input).len();
+                }
+                Key::Ctrl('w') => {
+                    // Mac: produced by Option-Backspace
+                    let curr_line = self.history.get(line_pos).unwrap_or(&input);
+                    let mut deleted = false;
+                    let mut in_word = false;
+                    for (i, c) in curr_line.char_indices().rev().skip(curr_line.len() - cursor_pos) {
+                        if c.is_ascii_alphanumeric() {
+                            in_word = true;
+                        } else if in_word {
+                            if line_pos < self.history.len() {
+                                input = self.history[line_pos].clone();
+                                line_pos = self.history.len();
+                            }
+                            input.replace_range(i + 1..cursor_pos, "");
+                            cursor_pos = i + 1;
+                            deleted = true;
+                            break;
+                        }
+                    }
+                    if !deleted {
+                        if line_pos < self.history.len() {
+                            input = self.history[line_pos].clone();
+                            line_pos = self.history.len();
+                        }
+                        input.replace_range(..cursor_pos, "");
+                        cursor_pos = 0;
+                    }
+                }
+                Key::Ctrl('u') => {
+                    // Mac: produced by Command-Backspace
+                    if line_pos < self.history.len() {
+                        input = self.history[line_pos].clone();
+                        line_pos = self.history.len();
+                    }
+                    input.replace_range(..cursor_pos, "");
+                    cursor_pos = 0;
                 }
                 _ => (),
             }
