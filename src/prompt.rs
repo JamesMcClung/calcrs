@@ -16,7 +16,8 @@ impl Prompter {
     }
 
     pub fn lines(&mut self) -> LinesIter {
-        LinesIter::new(self)
+        let stdout = io::stdout().into_raw_mode().expect("termion into_raw_mode error");
+        LinesIter { prompter: self, stdout, history: Vec::new() }
     }
 }
 
@@ -27,11 +28,6 @@ pub struct LinesIter<'a> {
 }
 
 impl<'a> LinesIter<'a> {
-    fn new(prompter: &'a mut Prompter) -> Self {
-        let stdout = io::stdout().into_raw_mode().expect("termion into_raw_mode error");
-        LinesIter { prompter, stdout, history: Vec::new() }
-    }
-
     fn flush(&mut self) {
         self.stdout.flush().expect("flush error");
     }
