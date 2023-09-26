@@ -8,23 +8,23 @@ use termion::raw::{IntoRawMode, RawTerminal};
 
 pub struct Prompter {
     prompt: String,
+    history: Vec<String>,
 }
 
 impl Prompter {
     pub fn new() -> Self {
-        Prompter { prompt: String::from("> ") }
+        Prompter { prompt: String::from("> "), history: Vec::new() }
     }
 
     pub fn lines(&mut self) -> LinesIter {
         let stdout = io::stdout().into_raw_mode().expect("termion into_raw_mode error");
-        LinesIter { prompter: self, stdout, history: Vec::new() }
+        LinesIter { prompter: self, stdout }
     }
 }
 
 pub struct LinesIter<'a> {
     prompter: &'a mut Prompter,
     stdout: RawTerminal<io::Stdout>,
-    history: Vec<String>,
 }
 
 struct KeyHandler<'a> {
@@ -50,7 +50,7 @@ impl<'a> Iterator for LinesIter<'a> {
     type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut key_handler = KeyHandler::new(&self.history);
+        let mut key_handler = KeyHandler::new(&self.prompter.history);
         set_input_state(&mut self.stdout, &self.prompter.prompt, &key_handler.input, key_handler.cursor_pos);
 
         for c in io::stdin().keys() {
@@ -58,10 +58,10 @@ impl<'a> Iterator for LinesIter<'a> {
                 Key::Char('\n') => {
                     write(&mut self.stdout, "\n\r");
                     let line_pos = key_handler.line_pos;
-                    if line_pos == self.history.len() {
-                        self.history.push(key_handler.input);
+                    if line_pos == self.prompter.history.len() {
+                        self.prompter.history.push(key_handler.input);
                     }
-                    return Some(self.history[line_pos].clone());
+                    return Some(self.prompter.history[line_pos].clone());
                 }
                 Key::Char(c) if c.is_ascii() => key_handler.handle_char(c),
                 Key::Backspace => key_handler.handle_backspace(),
