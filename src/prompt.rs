@@ -27,6 +27,13 @@ pub struct LinesIter<'a> {
     history: Vec<String>,
 }
 
+struct KeyHandler<'a> {
+    cursor_pos: usize,
+    line_pos: usize,
+    input: String,
+    history: &'a Vec<String>,
+}
+
 fn write<T: Write>(out: &mut T, text: &str) {
     write!(out, "{text}").expect("write error");
     out.flush().expect("flush error");
@@ -43,153 +50,147 @@ impl<'a> Iterator for LinesIter<'a> {
     type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut input = String::new();
-        let mut line_pos = self.history.len();
-        let mut cursor_pos = 0usize;
-        set_input_state(&mut self.stdout, &self.prompter.prompt, &input, cursor_pos);
+        let mut key_handler = KeyHandler::new(&self.history);
+        set_input_state(&mut self.stdout, &self.prompter.prompt, &key_handler.input, key_handler.cursor_pos);
 
         for c in io::stdin().keys() {
             match c.expect("termion keys error") {
                 Key::Char('\n') => {
                     write(&mut self.stdout, "\n\r");
+                    let line_pos = key_handler.line_pos;
                     if line_pos == self.history.len() {
-                        self.history.push(input);
+                        self.history.push(key_handler.input);
                     }
                     return Some(self.history[line_pos].clone());
                 }
-                Key::Char(c) if c.is_ascii() => {
-                    if line_pos < self.history.len() {
-                        input = self.history[line_pos].clone();
-                        line_pos = self.history.len();
-                    }
-                    input.insert(cursor_pos, c);
-                    cursor_pos += 1;
-                }
-                Key::Backspace => {
-                    if line_pos < self.history.len() {
-                        input = self.history[line_pos].clone();
-                        line_pos = self.history.len();
-                    }
-                    if cursor_pos > 0 {
-                        cursor_pos -= 1;
-                        input.remove(cursor_pos);
-                    }
-                }
-                Key::Left => {
-                    if cursor_pos > 0 {
-                        cursor_pos -= 1;
-                    }
-                }
-                Key::Right => {
-                    if cursor_pos < self.history.get(line_pos).unwrap_or(&input).len() {
-                        cursor_pos += 1;
-                    }
-                }
-                Key::Up => {
-                    if line_pos > 0 {
-                        let prev_line_len = self.history.get(line_pos).unwrap_or(&input).len();
-                        line_pos -= 1;
-                        let curr_line_len = self.history[line_pos].len();
-                        if cursor_pos == prev_line_len || cursor_pos > curr_line_len {
-                            cursor_pos = curr_line_len;
-                        }
-                    }
-                }
-                Key::Down => {
-                    if line_pos < self.history.len() {
-                        let prev_line_len = self.history[line_pos].len();
-                        line_pos += 1;
-                        let curr_line_len = self.history.get(line_pos).unwrap_or(&input).len();
-                        if cursor_pos == prev_line_len || cursor_pos > curr_line_len {
-                            cursor_pos = curr_line_len;
-                        }
-                    }
-                }
-                Key::Alt('b') => {
-                    // Mac: produced by Option-Left
-                    let curr_line = self.history.get(line_pos).unwrap_or(&input);
-                    let mut set_pos = false;
-                    let mut in_word = false;
-                    for (i, c) in curr_line.char_indices().rev().skip(curr_line.len() - cursor_pos) {
-                        if c.is_ascii_alphanumeric() {
-                            in_word = true;
-                        } else if in_word {
-                            cursor_pos = i + 1;
-                            set_pos = true;
-                            break;
-                        }
-                    }
-                    if !set_pos {
-                        cursor_pos = 0;
-                    }
-                }
-                Key::Alt('f') => {
-                    // Mac: produced by Option-Right
-                    let curr_line = self.history.get(line_pos).unwrap_or(&input);
-                    let mut set_pos = false;
-                    let mut in_word = false;
-                    for (i, c) in curr_line.char_indices().skip(cursor_pos) {
-                        if c.is_ascii_alphanumeric() {
-                            in_word = true;
-                        } else if in_word {
-                            cursor_pos = i;
-                            set_pos = true;
-                            break;
-                        }
-                    }
-                    if !set_pos {
-                        cursor_pos = curr_line.len();
-                    }
-                }
-                Key::Ctrl('a') => {
-                    // Mac: produced by Command-Left
-                    cursor_pos = 0;
-                }
-                Key::Ctrl('e') => {
-                    // Mac: produced by Command-Right
-                    cursor_pos = self.history.get(line_pos).unwrap_or(&input).len();
-                }
-                Key::Ctrl('w') => {
-                    // Mac: produced by Option-Backspace
-                    let curr_line = self.history.get(line_pos).unwrap_or(&input);
-                    let mut deleted = false;
-                    let mut in_word = false;
-                    for (i, c) in curr_line.char_indices().rev().skip(curr_line.len() - cursor_pos) {
-                        if c.is_ascii_alphanumeric() {
-                            in_word = true;
-                        } else if in_word {
-                            if line_pos < self.history.len() {
-                                input = self.history[line_pos].clone();
-                                line_pos = self.history.len();
-                            }
-                            input.replace_range(i + 1..cursor_pos, "");
-                            cursor_pos = i + 1;
-                            deleted = true;
-                            break;
-                        }
-                    }
-                    if !deleted {
-                        if line_pos < self.history.len() {
-                            input = self.history[line_pos].clone();
-                            line_pos = self.history.len();
-                        }
-                        input.replace_range(..cursor_pos, "");
-                        cursor_pos = 0;
-                    }
-                }
-                Key::Ctrl('u') => {
-                    // Mac: produced by Command-Backspace
-                    if line_pos < self.history.len() {
-                        input = self.history[line_pos].clone();
-                        line_pos = self.history.len();
-                    }
-                    input.replace_range(..cursor_pos, "");
-                    cursor_pos = 0;
-                }
+                Key::Char(c) if c.is_ascii() => key_handler.handle_char(c),
+                Key::Backspace => key_handler.handle_backspace(),
+                Key::Left => key_handler.handle_left(),
+                Key::Right => key_handler.handle_right(),
+                Key::Up => key_handler.handle_up(),
+                Key::Down => key_handler.handle_down(),
+                Key::Alt('b') => key_handler.handle_word_left(),       // Mac: Option-Left
+                Key::Alt('f') => key_handler.handle_word_right(),      // Mac: Option-Right
+                Key::Ctrl('a') => key_handler.handle_line_left(),      // Mac: Command-Left
+                Key::Ctrl('e') => key_handler.handle_line_right(),     // Mac: Command-Right
+                Key::Ctrl('w') => key_handler.handle_word_backspace(), // Mac: Option-Backspace
+                Key::Ctrl('u') => key_handler.handle_line_backspace(), // Mac: Command-Backspace
                 _ => (),
             }
-            set_input_state(&mut self.stdout, &self.prompter.prompt, &self.history.get(line_pos).unwrap_or(&input).clone(), cursor_pos);
+            set_input_state(&mut self.stdout, &self.prompter.prompt, key_handler.get_displayed_line(), key_handler.cursor_pos);
         }
         None
+    }
+}
+
+impl<'a> KeyHandler<'a> {
+    fn new(history: &'a Vec<String>) -> Self {
+        KeyHandler { cursor_pos: 0, line_pos: history.len(), input: String::new(), history }
+    }
+
+    fn get_displayed_line(&self) -> &str {
+        self.history.get(self.line_pos).unwrap_or(&self.input)
+    }
+
+    fn prepare_for_edit(&mut self) {
+        if self.line_pos < self.history.len() {
+            self.input = self.history[self.line_pos].clone();
+            self.line_pos = self.history.len();
+        }
+    }
+
+    fn handle_char(&mut self, c: char) {
+        self.prepare_for_edit();
+        self.input.insert(self.cursor_pos, c);
+        self.cursor_pos += 1;
+    }
+    fn handle_backspace(&mut self) {
+        self.prepare_for_edit();
+        if self.cursor_pos > 0 {
+            self.cursor_pos -= 1;
+            self.input.remove(self.cursor_pos);
+        }
+    }
+    fn handle_left(&mut self) {
+        if self.cursor_pos > 0 {
+            self.cursor_pos -= 1;
+        }
+    }
+    fn handle_right(&mut self) {
+        if self.cursor_pos < self.get_displayed_line().len() {
+            self.cursor_pos += 1;
+        }
+    }
+    fn handle_up(&mut self) {
+        if self.line_pos > 0 {
+            let prev_line_len = self.get_displayed_line().len();
+            self.line_pos -= 1;
+            let curr_line_len = self.get_displayed_line().len();
+            if self.cursor_pos == prev_line_len || self.cursor_pos > curr_line_len {
+                self.cursor_pos = curr_line_len;
+            }
+        }
+    }
+    fn handle_down(&mut self) {
+        if self.line_pos < self.history.len() {
+            let prev_line_len = self.get_displayed_line().len();
+            self.line_pos += 1;
+            let curr_line_len = self.get_displayed_line().len();
+            if self.cursor_pos == prev_line_len || self.cursor_pos > curr_line_len {
+                self.cursor_pos = curr_line_len;
+            }
+        }
+    }
+    fn handle_word_left(&mut self) {
+        let curr_line = self.get_displayed_line();
+        let mut in_word = false;
+        for (i, c) in curr_line.char_indices().rev().skip(curr_line.len() - self.cursor_pos) {
+            if c.is_ascii_alphanumeric() {
+                in_word = true;
+            } else if in_word {
+                self.cursor_pos = i + 1;
+                return;
+            }
+        }
+        self.cursor_pos = 0;
+    }
+    fn handle_word_right(&mut self) {
+        let curr_line = self.get_displayed_line();
+        let mut in_word = false;
+        for (i, c) in curr_line.char_indices().skip(self.cursor_pos) {
+            if c.is_ascii_alphanumeric() {
+                in_word = true;
+            } else if in_word {
+                self.cursor_pos = i;
+                return;
+            }
+        }
+        self.cursor_pos = curr_line.len();
+    }
+    fn handle_line_left(&mut self) {
+        self.cursor_pos = 0;
+    }
+    fn handle_line_right(&mut self) {
+        self.cursor_pos = self.get_displayed_line().len();
+    }
+    fn handle_word_backspace(&mut self) {
+        self.prepare_for_edit();
+        let mut in_word = false;
+        for (i, c) in self.input.char_indices().rev().skip(self.input.len() - self.cursor_pos) {
+            if c.is_ascii_alphanumeric() {
+                in_word = true;
+            } else if in_word {
+                self.input.replace_range(i + 1..self.cursor_pos, "");
+                self.cursor_pos = i + 1;
+                return;
+            }
+        }
+        self.input.replace_range(..self.cursor_pos, "");
+        self.cursor_pos = 0;
+    }
+    fn handle_line_backspace(&mut self) {
+        self.prepare_for_edit();
+        self.input.replace_range(..self.cursor_pos, "");
+        self.cursor_pos = 0;
     }
 }
