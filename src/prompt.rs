@@ -48,6 +48,16 @@ fn set_input_state<T: Write>(terminal: &mut T, prompt: &str, text: &str, cursor_
     terminal.flush().expect("flush error");
 }
 
+mod special_keys {
+    use termion::event::Key;
+    pub const WORD_LEFT: Key = Key::Alt('b');
+    pub const WORD_RIGHT: Key = Key::Alt('f');
+    pub const WORD_BACKSPACE: Key = Key::Ctrl('w');
+    pub const LINE_LEFT: Key = Key::Ctrl('a');
+    pub const LINE_RIGHT: Key = Key::Ctrl('e');
+    pub const LINE_BACKSPACE: Key = Key::Ctrl('u');
+}
+
 impl<'a, T: Write, K: Iterator<Item = Key>> Iterator for LinesIter<'a, T, K> {
     type Item = String;
 
@@ -75,12 +85,12 @@ impl<'a, T: Write, K: Iterator<Item = Key>> Iterator for LinesIter<'a, T, K> {
                 Key::Right => key_handler.handle_right(),
                 Key::Up => key_handler.handle_up(),
                 Key::Down => key_handler.handle_down(),
-                Key::Alt('b') => key_handler.handle_word_left(),       // Mac: Option-Left
-                Key::Alt('f') => key_handler.handle_word_right(),      // Mac: Option-Right
-                Key::Ctrl('a') => key_handler.handle_line_left(),      // Mac: Command-Left
-                Key::Ctrl('e') => key_handler.handle_line_right(),     // Mac: Command-Right
-                Key::Ctrl('w') => key_handler.handle_word_backspace(), // Mac: Option-Backspace
-                Key::Ctrl('u') => key_handler.handle_line_backspace(), // Mac: Command-Backspace
+                special_keys::WORD_LEFT => key_handler.handle_word_left(),           // Mac: Option-Left
+                special_keys::WORD_RIGHT => key_handler.handle_word_right(),         // Mac: Option-Right
+                special_keys::LINE_LEFT => key_handler.handle_line_left(),           // Mac: Command-Left
+                special_keys::LINE_RIGHT => key_handler.handle_line_right(),         // Mac: Command-Right
+                special_keys::WORD_BACKSPACE => key_handler.handle_word_backspace(), // Mac: Option-Backspace
+                special_keys::LINE_BACKSPACE => key_handler.handle_line_backspace(), // Mac: Command-Backspace
                 _ => (),
             }
             set_input_state(&mut self.terminal, &self.prompter.prompt, key_handler.get_displayed_line(), key_handler.cursor_pos);
