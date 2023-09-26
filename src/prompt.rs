@@ -1,4 +1,4 @@
-use std::io::{self, Write};
+use std::io::{self, Stdout, Write};
 
 use termion::clear;
 use termion::cursor;
@@ -24,7 +24,7 @@ impl Prompter {
 
 pub struct LinesIter<'a> {
     prompter: &'a mut Prompter,
-    terminal: RawTerminal<io::Stdout>,
+    terminal: RawTerminal<Stdout>,
 }
 
 struct KeyHandler<'a> {
