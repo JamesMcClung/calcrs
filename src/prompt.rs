@@ -1,10 +1,10 @@
-use std::io::{self, Stdout, Write};
+use std::io::{self, Write};
 
 use termion::clear;
 use termion::cursor;
 use termion::event::Key;
 use termion::input::TermRead;
-use termion::raw::{IntoRawMode, RawTerminal};
+use termion::raw::IntoRawMode;
 
 pub struct Prompter {
     prompt: String,
@@ -16,7 +16,7 @@ impl Prompter {
         Prompter { prompt: String::from("> "), history: Vec::new() }
     }
 
-    pub fn lines(&mut self) -> LinesIter<RawTerminal<Stdout>, impl Iterator<Item = Key>> {
+    pub fn lines(&mut self) -> LinesIter<impl Write, impl Iterator<Item = Key>> {
         let terminal = io::stdout().into_raw_mode().expect("termion into_raw_mode error");
         let keys = io::stdin().keys().map(|key| key.expect("termion keys error"));
         LinesIter { prompter: self, terminal, keys }
