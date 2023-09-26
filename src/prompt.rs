@@ -16,15 +16,17 @@ impl Prompter {
         Prompter { prompt: String::from("> "), history: Vec::new() }
     }
 
-    pub fn lines(&mut self) -> LinesIter<RawTerminal<Stdout>> {
+    pub fn lines(&mut self) -> LinesIter<RawTerminal<Stdout>, impl Iterator<Item = Key>> {
         let terminal = io::stdout().into_raw_mode().expect("termion into_raw_mode error");
-        LinesIter { prompter: self, terminal }
+        let keys = io::stdin().keys().map(|key| key.expect("termion keys error"));
+        LinesIter { prompter: self, terminal, keys }
     }
 }
 
-pub struct LinesIter<'a, T: Write> {
+pub struct LinesIter<'a, T: Write, K: Iterator<Item = Key>> {
     prompter: &'a mut Prompter,
     terminal: T,
+    keys: K,
 }
 
 struct KeyHandler<'a> {
@@ -46,15 +48,19 @@ fn set_input_state<T: Write>(terminal: &mut T, prompt: &str, text: &str, cursor_
     terminal.flush().expect("flush error");
 }
 
-impl<'a, T: Write> Iterator for LinesIter<'a, T> {
+impl<'a, T: Write, K: Iterator<Item = Key>> Iterator for LinesIter<'a, T, K> {
     type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut key_handler = KeyHandler::new(&self.prompter.history);
         set_input_state(&mut self.terminal, &self.prompter.prompt, &key_handler.input, key_handler.cursor_pos);
 
-        for c in io::stdin().keys() {
-            match c.expect("termion keys error") {
+        loop {
+            let c = self.keys.next();
+            if let None = c {
+                return None;
+            }
+            match c.expect("just handled none case") {
                 Key::Char('\n') => {
                     write(&mut self.terminal, "\n\r");
                     let line_pos = key_handler.line_pos;
@@ -79,7 +85,6 @@ impl<'a, T: Write> Iterator for LinesIter<'a, T> {
             }
             set_input_state(&mut self.terminal, &self.prompter.prompt, key_handler.get_displayed_line(), key_handler.cursor_pos);
         }
-        None
     }
 }
 
