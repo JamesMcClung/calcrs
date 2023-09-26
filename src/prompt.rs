@@ -27,23 +27,16 @@ pub struct LinesIter<'a> {
     history: Vec<String>,
 }
 
-impl<'a> LinesIter<'a> {
-    fn flush(&mut self) {
-        self.stdout.flush().expect("flush error");
-    }
+fn write<T: Write>(out: &mut T, text: &str) {
+    write!(out, "{text}").expect("write error");
+    out.flush().expect("flush error");
+}
 
-    fn write(&mut self, text: &str) {
-        write!(self.stdout, "{text}").expect("write error");
-        self.flush();
-    }
-
-    fn set_input_state(&mut self, text: &str, cursor_pos: usize) {
-        let clear = clear::CurrentLine;
-        let prompt = &self.prompter.prompt;
-        let move_right = cursor::Right((prompt.len() + cursor_pos) as u16);
-        write!(self.stdout, "\r{clear}{prompt}{text}\r{move_right}").expect("write error");
-        self.flush();
-    }
+fn set_input_state<T: Write>(out: &mut T, prompt: &str, text: &str, cursor_pos: usize) {
+    let clear = clear::CurrentLine;
+    let move_right = cursor::Right((prompt.len() + cursor_pos) as u16);
+    write!(out, "\r{clear}{prompt}{text}\r{move_right}").expect("write error");
+    out.flush().expect("flush error");
 }
 
 impl<'a> Iterator for LinesIter<'a> {
@@ -53,12 +46,12 @@ impl<'a> Iterator for LinesIter<'a> {
         let mut input = String::new();
         let mut line_pos = self.history.len();
         let mut cursor_pos = 0usize;
-        self.set_input_state(&input, cursor_pos);
+        set_input_state(&mut self.stdout, &self.prompter.prompt, &input, cursor_pos);
 
         for c in io::stdin().keys() {
             match c.expect("termion keys error") {
                 Key::Char('\n') => {
-                    self.write("\n\r");
+                    write(&mut self.stdout, "\n\r");
                     if line_pos == self.history.len() {
                         self.history.push(input);
                     }
@@ -195,7 +188,7 @@ impl<'a> Iterator for LinesIter<'a> {
                 }
                 _ => (),
             }
-            self.set_input_state(&self.history.get(line_pos).unwrap_or(&input).clone(), cursor_pos);
+            set_input_state(&mut self.stdout, &self.prompter.prompt, &self.history.get(line_pos).unwrap_or(&input).clone(), cursor_pos);
         }
         None
     }
