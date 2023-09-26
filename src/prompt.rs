@@ -17,14 +17,14 @@ impl Prompter {
     }
 
     pub fn lines(&mut self) -> LinesIter {
-        let stdout = io::stdout().into_raw_mode().expect("termion into_raw_mode error");
-        LinesIter { prompter: self, stdout }
+        let terminal = io::stdout().into_raw_mode().expect("termion into_raw_mode error");
+        LinesIter { prompter: self, terminal }
     }
 }
 
 pub struct LinesIter<'a> {
     prompter: &'a mut Prompter,
-    stdout: RawTerminal<io::Stdout>,
+    terminal: RawTerminal<io::Stdout>,
 }
 
 struct KeyHandler<'a> {
@@ -34,16 +34,16 @@ struct KeyHandler<'a> {
     history: &'a Vec<String>,
 }
 
-fn write<T: Write>(out: &mut T, text: &str) {
-    write!(out, "{text}").expect("write error");
-    out.flush().expect("flush error");
+fn write<T: Write>(terminal: &mut T, text: &str) {
+    write!(terminal, "{text}").expect("write error");
+    terminal.flush().expect("flush error");
 }
 
-fn set_input_state<T: Write>(out: &mut T, prompt: &str, text: &str, cursor_pos: usize) {
+fn set_input_state<T: Write>(terminal: &mut T, prompt: &str, text: &str, cursor_pos: usize) {
     let clear = clear::CurrentLine;
     let move_right = cursor::Right((prompt.len() + cursor_pos) as u16);
-    write!(out, "\r{clear}{prompt}{text}\r{move_right}").expect("write error");
-    out.flush().expect("flush error");
+    write!(terminal, "\r{clear}{prompt}{text}\r{move_right}").expect("write error");
+    terminal.flush().expect("flush error");
 }
 
 impl<'a> Iterator for LinesIter<'a> {
@@ -51,12 +51,12 @@ impl<'a> Iterator for LinesIter<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut key_handler = KeyHandler::new(&self.prompter.history);
-        set_input_state(&mut self.stdout, &self.prompter.prompt, &key_handler.input, key_handler.cursor_pos);
+        set_input_state(&mut self.terminal, &self.prompter.prompt, &key_handler.input, key_handler.cursor_pos);
 
         for c in io::stdin().keys() {
             match c.expect("termion keys error") {
                 Key::Char('\n') => {
-                    write(&mut self.stdout, "\n\r");
+                    write(&mut self.terminal, "\n\r");
                     let line_pos = key_handler.line_pos;
                     if line_pos == self.prompter.history.len() {
                         self.prompter.history.push(key_handler.input);
@@ -77,7 +77,7 @@ impl<'a> Iterator for LinesIter<'a> {
                 Key::Ctrl('u') => key_handler.handle_line_backspace(), // Mac: Command-Backspace
                 _ => (),
             }
-            set_input_state(&mut self.stdout, &self.prompter.prompt, key_handler.get_displayed_line(), key_handler.cursor_pos);
+            set_input_state(&mut self.terminal, &self.prompter.prompt, key_handler.get_displayed_line(), key_handler.cursor_pos);
         }
         None
     }
