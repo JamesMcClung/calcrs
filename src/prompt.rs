@@ -16,15 +16,15 @@ impl Prompter {
         Prompter { prompt: String::from("> "), history: Vec::new() }
     }
 
-    pub fn lines(&mut self) -> LinesIter {
+    pub fn lines(&mut self) -> LinesIter<RawTerminal<Stdout>> {
         let terminal = io::stdout().into_raw_mode().expect("termion into_raw_mode error");
         LinesIter { prompter: self, terminal }
     }
 }
 
-pub struct LinesIter<'a> {
+pub struct LinesIter<'a, T: Write> {
     prompter: &'a mut Prompter,
-    terminal: RawTerminal<Stdout>,
+    terminal: T,
 }
 
 struct KeyHandler<'a> {
@@ -46,7 +46,7 @@ fn set_input_state<T: Write>(terminal: &mut T, prompt: &str, text: &str, cursor_
     terminal.flush().expect("flush error");
 }
 
-impl<'a> Iterator for LinesIter<'a> {
+impl<'a, T: Write> Iterator for LinesIter<'a, T> {
     type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
