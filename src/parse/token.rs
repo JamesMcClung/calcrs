@@ -16,6 +16,17 @@ enum Char {
     Unknown(char),
 }
 
+impl Token {
+    pub fn to_str(&self) -> &str {
+        match self {
+            Token::Identifier(s) => s,
+            Token::WholeNumber(s) => s,
+            Token::Operator(s) => s,
+            Token::Space => " ",
+        }
+    }
+}
+
 impl Char {
     fn new(c: char) -> Char {
         if c.is_ascii_alphabetic() {
