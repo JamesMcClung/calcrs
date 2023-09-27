@@ -81,6 +81,34 @@ fn try_parse_sum(tokens: &[Token]) -> Result<Option<Expression>, Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fmt::Debug;
+    use std::sync::Once;
+
+    static INIT: Once = Once::new();
+
+    fn fail_test<T: Debug, U: Debug>(input: &str, expected_output: T, actual_output: U) {
+        INIT.call_once(|| std::panic::set_hook(Box::new(error::minimal_panic_hook)));
+        panic!("input:    \"{input}\"\nexpected: {expected_output:?}\nactual:   {actual_output:?}");
+    }
+
+    fn expect_value(expected_output: Value, input: &str) {
+        match parse(input) {
+            Err(err) => fail_test(input, expected_output, err),
+            Ok(expr) => match expr.eval() {
+                Ok(output) if output == expected_output => return,
+                Ok(bad_output) => fail_test(input, expected_output, bad_output),
+                Err(err) => fail_test(input, expected_output, err),
+            },
+        }
+    }
+
+    fn expect_syntax_error(input: &str) {
+        match parse(input) {
+            Err(Error::SyntaxError(_)) => return,
+            Err(bad_err) => fail_test(input, "SyntaxError", bad_err),
+            Ok(expr) => fail_test(input, "SyntaxError", expr),
+        }
+    }
 
     #[test]
     fn parse_int() -> Result<(), Error> {
