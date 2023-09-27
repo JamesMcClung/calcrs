@@ -1,1 +1,2 @@
 max_width = 10000
+match_block_trailing_comma = true
