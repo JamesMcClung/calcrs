@@ -68,7 +68,14 @@ fn try_parse_sum(tokens: &[Token]) -> Result<Option<Expression>, Error> {
     if tokens.len() < 3 {
         return Ok(None);
     }
+    let mut found_lhs = false;
     for i in 1..(tokens.len() - 1) {
+        if matches!(tokens[i - 1], Token::Identifier(_) | Token::WholeNumber(_)) {
+            found_lhs = true;
+        }
+        if !found_lhs {
+            continue;
+        }
         match &tokens[i - 1..=i + 1] {
             [Token::Operator(_), _, _] => (),
             [_, _, Token::Operator(_)] => (),
