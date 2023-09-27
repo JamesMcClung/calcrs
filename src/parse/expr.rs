@@ -36,3 +36,12 @@ impl std::ops::Add for Value {
         }
     }
 }
+
+impl std::ops::Neg for Value {
+    type Output = Self;
+    fn neg(self) -> Self::Output {
+        match self {
+            Value::Integer(val) => Value::Integer(-val),
+        }
+    }
+}
