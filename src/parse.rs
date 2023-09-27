@@ -20,7 +20,7 @@ fn trim_spaces(mut tokens: &[Token]) -> &[Token] {
     tokens
 }
 
-pub fn parse_tokens(tokens: &[Token]) -> Result<Expression, Error> {
+fn parse_tokens(tokens: &[Token]) -> Result<Expression, Error> {
     let tokens = trim_spaces(tokens);
     let parse_seq = [try_parse_integer, try_parse_sum, try_parse_unary_plus, try_parse_unary_minus];
     for try_parse in parse_seq {
