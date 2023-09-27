@@ -41,6 +41,15 @@ impl std::ops::Add for Value {
     }
 }
 
+impl std::ops::Sub for Value {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (Value::Integer(lhs), Value::Integer(rhs)) => Value::Integer(lhs - rhs),
+        }
+    }
+}
+
 impl std::ops::Neg for Value {
     type Output = Self;
     fn neg(self) -> Self::Output {
