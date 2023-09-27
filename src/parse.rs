@@ -203,6 +203,27 @@ mod tests {
     }
 
     #[test]
+    fn parse_difference() {
+        expect_value(Value::Integer(-3), "1-4");
+        expect_value(Value::Integer(-3), " 1 - 4 ");
+        expect_value(Value::Integer(-23), "-4-19");
+        expect_value(Value::Integer(-19), "-20+1");
+        expect_value(Value::Integer(-3), "0-3");
+        expect_value(Value::Integer(3), "0- -3");
+        expect_value(Value::Integer(-4), "-6 - -2");
+        expect_value(Value::Integer(4), "+6 - +2");
+        expect_value(Value::Integer(-4), "1 - 2 - 3");
+        expect_value(Value::Integer(2), "1 - 2 + 3");
+        expect_value(Value::Integer(0), "1 + 2 - 3");
+        expect_value(Value::Integer(-6), "-1 - 2 - 3");
+        expect_value(Value::Integer(4), "1 - - 3");
+        expect_value(Value::Integer(-2), "1 - + 3");
+        expect_value(Value::Integer(4), "1 - - - + - 3");
+        expect_value(Value::Integer(-2), "1 - - - + - - 3");
+        expect_syntax_error("1--3");
+    }
+
+    #[test]
     fn parse_unary_plus() {
         expect_value(Value::Integer(3), "+3");
         expect_value(Value::Integer(3), " + 3 ");
