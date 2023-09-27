@@ -8,7 +8,7 @@ pub enum Expression {
     UnaryMinus(Box<Expression>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Value {
     Integer(i64),
 }

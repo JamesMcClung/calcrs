@@ -81,53 +81,77 @@ fn try_parse_sum(tokens: &[Token]) -> Result<Option<Expression>, Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fmt::Debug;
+    use std::sync::Once;
 
-    #[test]
-    fn parse_int() -> Result<(), Error> {
-        assert!(matches!(parse("0")?.eval()?, Value::Integer(0)));
-        assert!(matches!(parse("11111")?.eval()?, Value::Integer(11111)));
-        assert!(matches!(parse("-32")?.eval()?, Value::Integer(-32)));
-        assert!(matches!(parse("+234")?.eval()?, Value::Integer(234)));
-        Ok(())
+    static INIT: Once = Once::new();
+
+    fn fail_test<T: Debug, U: Debug>(input: &str, expected_output: T, actual_output: U) {
+        INIT.call_once(|| std::panic::set_hook(Box::new(error::minimal_panic_hook)));
+        panic!("input:    \"{input}\"\nexpected: {expected_output:?}\nactual:   {actual_output:?}");
+    }
+
+    fn expect_value(expected_output: Value, input: &str) {
+        match parse(input) {
+            Err(err) => fail_test(input, expected_output, err),
+            Ok(expr) => match expr.eval() {
+                Ok(output) if output == expected_output => return,
+                Ok(bad_output) => fail_test(input, expected_output, bad_output),
+                Err(err) => fail_test(input, expected_output, err),
+            },
+        }
+    }
+
+    fn expect_syntax_error(input: &str) {
+        match parse(input) {
+            Err(Error::SyntaxError(_)) => return,
+            Err(bad_err) => fail_test(input, "SyntaxError", bad_err),
+            Ok(expr) => fail_test(input, "SyntaxError", expr),
+        }
     }
 
     #[test]
-    fn parse_sum() -> Result<(), Error> {
-        assert!(matches!(parse("1+4")?.eval()?, Value::Integer(5)));
-        assert!(matches!(parse("-4+19")?.eval()?, Value::Integer(15)));
-        assert!(matches!(parse("-20+1")?.eval()?, Value::Integer(-19)));
-        assert!(matches!(parse("0+3")?.eval()?, Value::Integer(3)));
-        assert!(matches!(parse("0+ -3")?.eval()?, Value::Integer(-3)));
-        assert!(matches!(parse("-6 + -2")?.eval()?, Value::Integer(-8)));
-        assert!(matches!(parse("+6 + +2")?.eval()?, Value::Integer(8)));
-        assert!(matches!(parse("1 + 2 + 3")?.eval()?, Value::Integer(6)));
-        assert!(matches!(parse("-1 + 2 + 3")?.eval()?, Value::Integer(4)));
-        assert!(matches!(parse("1 + + 3")?.eval()?, Value::Integer(4)));
-        assert!(matches!(parse("1 + - 3")?.eval()?, Value::Integer(-2)));
-        assert!(matches!(parse("1 + - - + - 3")?.eval()?, Value::Integer(-2)));
-        assert!(matches!(parse("1 + - - + - - 3")?.eval()?, Value::Integer(4)));
-        Ok(())
+    fn parse_int() {
+        expect_value(Value::Integer(0), "0");
+        expect_value(Value::Integer(11111), "11111");
+        expect_value(Value::Integer(-32), "-32");
+        expect_value(Value::Integer(234), "+234");
     }
 
     #[test]
-    fn parse_unary_plus() -> Result<(), Error> {
-        assert!(matches!(parse("+3")?.eval()?, Value::Integer(3)));
-        assert!(matches!(parse("+ +3")?.eval()?, Value::Integer(3)));
-        assert!(matches!(parse("+ + 3")?.eval()?, Value::Integer(3)));
-        assert!(matches!(parse("+ + -3")?.eval()?, Value::Integer(-3)));
-        assert!(matches!(parse("+ + - 3")?.eval()?, Value::Integer(-3)));
-        assert!(matches!(parse("++3"), Err(Error::SyntaxError(_))));
-        Ok(())
+    fn parse_sum() {
+        expect_value(Value::Integer(5), "1+4");
+        expect_value(Value::Integer(15), "-4+19");
+        expect_value(Value::Integer(-19), "-20+1");
+        expect_value(Value::Integer(3), "0+3");
+        expect_value(Value::Integer(-3), "0+ -3");
+        expect_value(Value::Integer(-8), "-6 + -2");
+        expect_value(Value::Integer(8), "+6 + +2");
+        expect_value(Value::Integer(6), "1 + 2 + 3");
+        expect_value(Value::Integer(4), "-1 + 2 + 3");
+        expect_value(Value::Integer(4), "1 + + 3");
+        expect_value(Value::Integer(-2), "1 + - 3");
+        expect_value(Value::Integer(-2), "1 + - - + - 3");
+        expect_value(Value::Integer(4), "1 + - - + - - 3");
     }
 
     #[test]
-    fn parse_unary_minus() -> Result<(), Error> {
-        assert!(matches!(parse("-3")?.eval()?, Value::Integer(-3)));
-        assert!(matches!(parse("- -3")?.eval()?, Value::Integer(3)));
-        assert!(matches!(parse("- - 3")?.eval()?, Value::Integer(3)));
-        assert!(matches!(parse("- - +3")?.eval()?, Value::Integer(3)));
-        assert!(matches!(parse("- - + 3")?.eval()?, Value::Integer(3)));
-        assert!(matches!(parse("--3"), Err(Error::SyntaxError(_))));
-        Ok(())
+    fn parse_unary_plus() {
+        expect_value(Value::Integer(3), "+3");
+        expect_value(Value::Integer(3), "+ +3");
+        expect_value(Value::Integer(3), "+ + 3");
+        expect_value(Value::Integer(-3), "+ + -3");
+        expect_value(Value::Integer(-3), "+ + - 3");
+        expect_syntax_error("++3");
+    }
+
+    #[test]
+    fn parse_unary_minus() {
+        expect_value(Value::Integer(-3), "-3");
+        expect_value(Value::Integer(3), "- -3");
+        expect_value(Value::Integer(3), "- - 3");
+        expect_value(Value::Integer(3), "- - +3");
+        expect_value(Value::Integer(3), "- - + 3");
+        expect_syntax_error("--3");
     }
 }
