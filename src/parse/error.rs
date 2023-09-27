@@ -16,3 +16,14 @@ impl std::fmt::Display for Error {
         })
     }
 }
+
+#[cfg(test)]
+pub fn minimal_panic_hook(info: &std::panic::PanicInfo) {
+    if let Some(msg) = info.payload().downcast_ref::<&str>() {
+        println!("{msg}");
+    } else if let Some(msg) = info.payload().downcast_ref::<String>() {
+        println!("{msg}");
+    } else {
+        println!("unable to print panic message");
+    }
+}
