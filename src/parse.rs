@@ -22,18 +22,13 @@ fn trim_spaces(mut tokens: &[Token]) -> &[Token] {
 
 pub fn parse_tokens(tokens: &[Token]) -> Result<Expression, Error> {
     let tokens = trim_spaces(tokens);
-
-    if let Some(expr) = try_parse_integer(tokens)? {
-        Ok(expr)
-    } else if let Some(expr) = try_parse_sum(tokens)? {
-        Ok(expr)
-    } else if let Some(expr) = try_parse_unary_plus(tokens)? {
-        Ok(expr)
-    } else if let Some(expr) = try_parse_unary_minus(tokens)? {
-        Ok(expr)
-    } else {
-        Err(Error::SyntaxError(tokens.to_vec()))
+    let parse_seq = [try_parse_integer, try_parse_sum, try_parse_unary_plus, try_parse_unary_minus];
+    for try_parse in parse_seq {
+        if let Some(expr) = try_parse(tokens)? {
+            return Ok(expr);
+        }
     }
+    Err(Error::SyntaxError(tokens.to_vec()))
 }
 
 fn try_parse_integer(tokens: &[Token]) -> Result<Option<Expression>, Error> {
