@@ -209,3 +209,110 @@ impl<'a> KeyHandler<'a> {
         self.cursor_pos = 0;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn do_test(expected_output: Vec<&str>, input: Vec<Key>) {
+        let mut prompter = Prompter::new();
+        let linesiter = LinesIter { prompter: &mut prompter, terminal: Vec::new(), keys: input.into_iter() };
+        assert_eq!(expected_output, linesiter.collect::<Vec<_>>());
+    }
+
+    #[test]
+    fn words() {
+        use Key::Char;
+        do_test(vec![""], vec![Char('\n')]);
+        do_test(vec!["hi"], vec![Char('h'), Char('i'), Char('\n')]);
+        do_test(vec!["hi you"], vec![Char('h'), Char('i'), Char(' '), Char('y'), Char('o'), Char('u'), Char('\n')]);
+        do_test(vec!["hi", "you"], vec![Char('h'), Char('i'), Char('\n'), Char('y'), Char('o'), Char('u'), Char('\n')]);
+    }
+
+    #[test]
+    fn left_right() {
+        use Key::{Char, Left, Right};
+        do_test(vec![""], vec![Right, Char('\n')]);
+        do_test(vec![""], vec![Left, Char('\n')]);
+        do_test(vec!["ih"], vec![Char('h'), Left, Char('i'), Char('\n')]);
+        do_test(vec!["hi"], vec![Char('h'), Left, Right, Char('i'), Char('\n')]);
+        do_test(vec!["ih"], vec![Char('h'), Right, Left, Char('i'), Char('\n')]);
+    }
+
+    #[test]
+    fn word_left_right() {
+        use special_keys::{WORD_LEFT, WORD_RIGHT};
+        use Key::{Char, Left};
+        do_test(vec![""], vec![WORD_RIGHT, Char('\n')]);
+        do_test(vec![""], vec![WORD_LEFT, Char('\n')]);
+        do_test(vec!["lhe"], vec![Char('h'), Char('e'), WORD_LEFT, Char('l'), Char('\n')]);
+        do_test(vec!["hel"], vec![Char('h'), Char('e'), WORD_LEFT, WORD_RIGHT, Char('l'), Char('\n')]);
+        do_test(vec!["ih"], vec![Char('h'), WORD_RIGHT, WORD_LEFT, Char('i'), Char('\n')]);
+        do_test(vec!["hi uyo"], vec![Char('h'), Char('i'), Char(' '), Char('y'), Char('o'), WORD_LEFT, Char('u'), Char('\n')]);
+        do_test(vec!["hlelo"], vec![Char('h'), Char('e'), Char('l'), Left, Left, Char('l'), WORD_RIGHT, Char('o'), Char('\n')]);
+        do_test(vec!["a db c"], vec![Char('a'), Char(' '), Char('b'), Char(' '), Char('c'), WORD_LEFT, WORD_LEFT, Char('d'), Char('\n')]);
+        do_test(vec!["a bd c"], vec![Char('a'), Char(' '), Char('b'), Char(' '), Char('c'), Left, Left, Left, Left, Left, WORD_RIGHT, WORD_RIGHT, Char('d'), Char('\n')]);
+    }
+
+    #[test]
+    fn line_left_right() {
+        use special_keys::{LINE_LEFT, LINE_RIGHT};
+        use Key::Char;
+        do_test(vec![""], vec![LINE_LEFT, Char('\n')]);
+        do_test(vec![""], vec![LINE_RIGHT, Char('\n')]);
+        do_test(vec!["ohi y"], vec![Char('h'), Char('i'), Char(' '), Char('y'), LINE_LEFT, Char('o'), Char('\n')]);
+        do_test(vec!["hi yo"], vec![Char('h'), Char('i'), Char(' '), Char('y'), LINE_LEFT, LINE_RIGHT, Char('o'), Char('\n')]);
+    }
+
+    #[test]
+    fn backspace() {
+        use Key::{Backspace, Char, Left};
+        do_test(vec![""], vec![Backspace, Char('\n')]);
+        do_test(vec!["i"], vec![Char('h'), Backspace, Char('i'), Char('\n')]);
+        do_test(vec![""], vec![Char('h'), Char('i'), Backspace, Backspace, Char('\n')]);
+        do_test(vec!["i"], vec![Char('h'), Char('i'), Left, Backspace, Char('\n')]);
+    }
+
+    #[test]
+    fn word_backspace() {
+        use special_keys::WORD_BACKSPACE;
+        use Key::{Char, Left};
+        do_test(vec![""], vec![WORD_BACKSPACE, Char('\n')]);
+        do_test(vec![""], vec![Char('h'), Char('i'), WORD_BACKSPACE, Char('\n')]);
+        do_test(vec![""], vec![Char('h'), Char('i'), Char(' '), WORD_BACKSPACE, Char('\n')]);
+        do_test(vec!["hi "], vec![Char('h'), Char('i'), Char(' '), Char('y'), WORD_BACKSPACE, Char('\n')]);
+        do_test(vec!["hi "], vec![Char('h'), Char('i'), Char(' '), Char('y'), Char('o'), WORD_BACKSPACE, Char('\n')]);
+        do_test(vec!["hi o"], vec![Char('h'), Char('i'), Char(' '), Char('y'), Char('o'), Left, WORD_BACKSPACE, Char('\n')]);
+    }
+
+    #[test]
+    fn line_backspace() {
+        use special_keys::LINE_BACKSPACE;
+        use Key::{Char, Left};
+        do_test(vec![""], vec![LINE_BACKSPACE, Char('\n')]);
+        do_test(vec![""], vec![Char('h'), Char('i'), LINE_BACKSPACE, Char('\n')]);
+        do_test(vec![""], vec![Char('h'), Char('i'), Char(' '), LINE_BACKSPACE, Char('\n')]);
+        do_test(vec![""], vec![Char('h'), Char('i'), Char(' '), Char('y'), LINE_BACKSPACE, Char('\n')]);
+        do_test(vec![""], vec![Char('h'), Char('i'), Char(' '), Char('y'), Char('o'), LINE_BACKSPACE, Char('\n')]);
+        do_test(vec!["o"], vec![Char('h'), Char('i'), Char(' '), Char('y'), Char('o'), Left, LINE_BACKSPACE, Char('\n')]);
+    }
+
+    #[test]
+    fn up_down() {
+        use Key::{Backspace, Char, Down, Left, Right, Up};
+        do_test(vec![""], vec![Up, Char('\n')]);
+        do_test(vec![""], vec![Down, Char('\n')]);
+        do_test(vec!["a", "a"], vec![Char('a'), Char('\n'), Up, Char('\n')]);
+        do_test(vec!["a", "ab"], vec![Char('a'), Char('\n'), Up, Char('b'), Char('\n')]);
+        do_test(vec!["a", "a"], vec![Char('a'), Char('\n'), Char('b'), Up, Char('\n')]);
+        do_test(vec!["a", "b"], vec![Char('a'), Char('\n'), Up, Down, Char('b'), Char('\n')]);
+        do_test(vec!["a", "b"], vec![Char('a'), Char('\n'), Up, Left, Down, Char('b'), Char('\n')]);
+        do_test(vec!["ab", "a"], vec![Char('a'), Char('b'), Char('\n'), Up, Backspace, Char('\n')]);
+        do_test(vec!["ab", "a"], vec![Char('a'), Char('b'), Char('\n'), Up, Right, Backspace, Char('\n')]);
+        do_test(vec!["ab", "b"], vec![Char('a'), Char('b'), Char('\n'), Up, Left, Backspace, Char('\n')]);
+        do_test(vec!["a", "ac"], vec![Char('a'), Char('\n'), Char('b'), Up, Char('c'), Char('\n')]);
+        do_test(vec!["a", "b", "a"], vec![Char('a'), Char('\n'), Char('b'), Char('\n'), Up, Up, Char('\n')]);
+        do_test(vec!["a", "b", "b"], vec![Char('a'), Char('\n'), Char('b'), Char('\n'), Up, Up, Down, Char('\n')]);
+        do_test(vec!["abc", "de"], vec![Char('a'), Char('b'), Char('c'), Char('\n'), Char('d'), Up, Left, Down, Char('e'), Char('\n')]);
+    }
+}
