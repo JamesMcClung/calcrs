@@ -47,10 +47,10 @@ fn try_parse_sum(tokens: &[Token]) -> Result<Option<Expression>, Error> {
         return Ok(None);
     }
     for i in 1..(tokens.len() - 1) {
-        match (&tokens[i - 1], &tokens[i], &tokens[i + 1]) {
-            (Token::Operator(_), _, _) => (),
-            (_, _, Token::Operator(_)) => (),
-            (_, Token::Operator(op), _) if op == "+" => return Ok(Some(Expression::Sum(Box::new(parse_tokens(&tokens[..i])?), Box::new(parse_tokens(&tokens[i + 1..])?)))),
+        match &tokens[i - 1..=i + 1] {
+            [Token::Operator(_), _, _] => (),
+            [_, _, Token::Operator(_)] => (),
+            [_, Token::Operator(op), _] if op == "+" => return Ok(Some(Expression::Sum(Box::new(parse_tokens(&tokens[..i])?), Box::new(parse_tokens(&tokens[i + 1..])?)))),
             _ => (),
         }
     }
