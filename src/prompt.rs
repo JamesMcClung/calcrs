@@ -78,7 +78,7 @@ impl<'a, T: Write, K: Iterator<Item = Key>> Iterator for LinesIter<'a, T, K> {
                         self.prompter.history.push(key_handler.input);
                     }
                     return Some(self.prompter.history[line_pos].clone());
-                }
+                },
                 Key::Char(c) if c.is_ascii() => key_handler.handle_char(c),
                 Key::Backspace => key_handler.handle_backspace(),
                 Key::Left => key_handler.handle_left(),
