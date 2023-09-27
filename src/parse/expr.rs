@@ -4,6 +4,7 @@ use super::Error;
 pub enum Expression {
     Constant(Value),
     Sum(Box<Expression>, Box<Expression>),
+    Difference(Box<Expression>, Box<Expression>),
     UnaryPlus(Box<Expression>),
     UnaryMinus(Box<Expression>),
 }
@@ -18,6 +19,7 @@ impl Expression {
         match self {
             Self::Constant(c) => Ok(c),
             Self::Sum(left, right) => Ok(left.eval()? + right.eval()?),
+            Self::Difference(left, right) => Ok(left.eval()? - right.eval()?),
             Self::UnaryPlus(expr) => Ok(expr.eval()?),
             Self::UnaryMinus(expr) => Ok(-expr.eval()?),
         }
