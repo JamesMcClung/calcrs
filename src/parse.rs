@@ -27,6 +27,10 @@ pub fn parse_tokens(tokens: &[Token]) -> Result<Expression, Error> {
         Ok(expr)
     } else if let Some(expr) = try_parse_sum(tokens)? {
         Ok(expr)
+    } else if let Some(expr) = try_parse_unary_plus(tokens)? {
+        Ok(expr)
+    } else if let Some(expr) = try_parse_unary_minus(tokens)? {
+        Ok(expr)
     } else {
         Err(Error::SyntaxError(tokens.to_vec()))
     }
@@ -38,6 +42,24 @@ fn try_parse_integer(tokens: &[Token]) -> Result<Option<Expression>, Error> {
         [Token::WholeNumber(num)] => Some(Expression::Constant(Value::Integer(parse_num(num)))),
         [Token::Operator(op), Token::WholeNumber(num)] if op == "+" => Some(Expression::Constant(Value::Integer(parse_num(num)))),
         [Token::Operator(op), Token::WholeNumber(num)] if op == "-" => Some(Expression::Constant(Value::Integer(-parse_num(num)))),
+        _ => None,
+    })
+}
+
+fn try_parse_unary_plus(tokens: &[Token]) -> Result<Option<Expression>, Error> {
+    Ok(match tokens {
+        [_] => None,
+        [_, Token::Operator(op), ..] if op == "+" || op == "-" => None,
+        [Token::Operator(op), rest @ ..] if op == "+" => Some(Expression::UnaryPlus(Box::new(parse_tokens(rest)?))),
+        _ => None,
+    })
+}
+
+fn try_parse_unary_minus(tokens: &[Token]) -> Result<Option<Expression>, Error> {
+    Ok(match tokens {
+        [_] => None,
+        [_, Token::Operator(op), ..] if op == "+" || op == "-" => None,
+        [Token::Operator(op), rest @ ..] if op == "-" => Some(Expression::UnaryMinus(Box::new(parse_tokens(rest)?))),
         _ => None,
     })
 }
