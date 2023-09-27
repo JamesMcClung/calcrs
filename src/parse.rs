@@ -37,11 +37,8 @@ pub fn parse_tokens(tokens: &[Token]) -> Result<Expression, Error> {
 }
 
 fn try_parse_integer(tokens: &[Token]) -> Result<Option<Expression>, Error> {
-    let parse_num = |num: &str| num.parse::<i64>().expect("num should always be a sequence of digits");
     Ok(match tokens {
-        [Token::WholeNumber(num)] => Some(Expression::Constant(Value::Integer(parse_num(num)))),
-        [Token::Operator(op), Token::WholeNumber(num)] if op == "+" => Some(Expression::Constant(Value::Integer(parse_num(num)))),
-        [Token::Operator(op), Token::WholeNumber(num)] if op == "-" => Some(Expression::Constant(Value::Integer(-parse_num(num)))),
+        [Token::WholeNumber(num)] => Some(Expression::Constant(Value::Integer(num.parse().expect("num should always be a sequence of digits")))),
         _ => None,
     })
 }
