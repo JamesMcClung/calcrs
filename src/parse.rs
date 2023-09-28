@@ -138,6 +138,7 @@ mod tests {
         expect_value(Value::Integer(-2), "1 + - 3");
         expect_value(Value::Integer(-2), "1 + - - + - 3");
         expect_value(Value::Integer(4), "1 + - - + - - 3");
+        expect_syntax_error("1++3");
     }
 
     #[test]
@@ -148,6 +149,7 @@ mod tests {
         expect_value(Value::Integer(-3), "+ + -3");
         expect_value(Value::Integer(-3), "+ + - 3");
         expect_syntax_error("++3");
+        expect_syntax_error("+ ++3");
     }
 
     #[test]
@@ -157,6 +159,6 @@ mod tests {
         expect_value(Value::Integer(3), "- - 3");
         expect_value(Value::Integer(3), "- - +3");
         expect_value(Value::Integer(3), "- - + 3");
-        expect_syntax_error("--3");
+        expect_syntax_error("- --3");
     }
 }
