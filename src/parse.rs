@@ -172,6 +172,29 @@ mod tests {
     #[test]
     fn syntax_errors() {
         expect_syntax_error("1++");
+        expect_syntax_error("()");
+        expect_syntax_error("( )");
+        expect_syntax_error("(() ( ) )");
+    }
+
+    #[test]
+    fn parse_parens() {
+        expect_value(Value::Integer(1), "(1)");
+        expect_value(Value::Integer(1), " ( 1 ) ");
+        expect_value(Value::Integer(1), "(( ( 1 ) ) ) ");
+        expect_value(Value::Integer(2), "(1) + (1)");
+        expect_value(Value::Integer(0), "(1) - (1)");
+        expect_value(Value::Integer(-2), "(1) - (1 + 2)");
+        expect_value(Value::Integer(-3), "-(1 + 2)");
+        expect_value(Value::Integer(16), "(10+2)-(-5 + (3 - 2))");
+        expect_syntax_error("1)");
+        expect_syntax_error(" 1 ) ");
+        expect_syntax_error("(1");
+        expect_syntax_error(" ( 1 ");
+        expect_syntax_error("(1))");
+        expect_syntax_error("((1)");
+        expect_syntax_error(")(");
+        expect_syntax_error(")1(");
     }
 
     #[test]
