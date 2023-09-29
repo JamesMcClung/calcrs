@@ -157,6 +157,7 @@ mod tests {
     #[test]
     fn parse_int() {
         expect_value(Value::Integer(0), "0");
+        expect_value(Value::Integer(0), " 0 ");
         expect_value(Value::Integer(11111), "11111");
         expect_value(Value::Integer(-32), "-32");
         expect_value(Value::Integer(234), "+234");
@@ -165,6 +166,7 @@ mod tests {
     #[test]
     fn parse_sum() {
         expect_value(Value::Integer(5), "1+4");
+        expect_value(Value::Integer(5), " 1 + 4 ");
         expect_value(Value::Integer(15), "-4+19");
         expect_value(Value::Integer(-19), "-20+1");
         expect_value(Value::Integer(3), "0+3");
@@ -183,6 +185,7 @@ mod tests {
     #[test]
     fn parse_unary_plus() {
         expect_value(Value::Integer(3), "+3");
+        expect_value(Value::Integer(3), " + 3 ");
         expect_value(Value::Integer(3), "+ +3");
         expect_value(Value::Integer(3), "+ + 3");
         expect_value(Value::Integer(-3), "+ + -3");
@@ -194,6 +197,7 @@ mod tests {
     #[test]
     fn parse_unary_minus() {
         expect_value(Value::Integer(-3), "-3");
+        expect_value(Value::Integer(-3), " - 3 ");
         expect_value(Value::Integer(3), "- -3");
         expect_value(Value::Integer(3), "- - 3");
         expect_value(Value::Integer(3), "- - +3");
