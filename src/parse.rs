@@ -19,12 +19,26 @@ pub fn parse(expr: &str) -> Result<Expression, Error> {
     parse_unary_ops(&mut tokens);
     parse_sums(&mut tokens);
     trim_spaces(&mut tokens);
+    get_result(tokens)
+}
+
+fn get_result(mut tokens: Vec<Parse>) -> Result<Expression, Error> {
     if tokens.len() == 1 {
         if let Parse::Expr(expr) = tokens.pop().expect("just checked size") {
             return Ok(expr);
         }
     }
-    Err(Error::SyntaxError(format!("{tokens:?}")))
+    let mut message = None;
+    for i in 0..=tokens.len() {
+        match (tokens.get(i), &mut message) {
+            (Some(Parse::Temp), _) => panic!("Temps aren't allowed to persist"),
+            (Some(Parse::Tok(tok)), None) => message = Some(tok.to_str().to_string()),
+            (Some(Parse::Tok(tok)), Some(message)) => message.push_str(tok.to_str()),
+            (Some(Parse::Expr(_)) | None, Some(message)) => return Err(Error::SyntaxError(format!("invalid syntax \"{}\"", message.trim()))),
+            _ => (),
+        }
+    }
+    unreachable!();
 }
 
 fn trim_spaces(tokens: &mut Vec<Parse>) {
@@ -153,6 +167,11 @@ mod tests {
             Err(bad_err) => fail_test(input, "SyntaxError", bad_err),
             Ok(expr) => fail_test(input, "SyntaxError", expr),
         }
+    }
+
+    #[test]
+    fn syntax_errors() {
+        expect_syntax_error("1++");
     }
 
     #[test]
