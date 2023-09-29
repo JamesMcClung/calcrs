@@ -14,7 +14,11 @@ enum Parse {
 }
 
 pub fn parse(expr: &str) -> Result<Expression, Error> {
-    let mut tokens = token::tokenize(expr)?.into_iter().map(|tok| Parse::Tok(tok)).collect::<Vec<_>>();
+    parse_impl(token::tokenize(expr)?.into_iter().map(|tok| Parse::Tok(tok)).collect::<Vec<_>>())
+}
+
+fn parse_impl(mut tokens: Vec<Parse>) -> Result<Expression, Error> {
+    parse_parens(&mut tokens)?;
     parse_whole_numbers(&mut tokens);
     parse_unary_ops(&mut tokens);
     parse_sums_differences(&mut tokens);
@@ -57,6 +61,34 @@ fn parse_whole_numbers(tokens: &mut Vec<Parse>) {
             *tok = Parse::Expr(Expression::Constant(Value::Integer(num)))
         }
     }
+}
+
+fn parse_parens(tokens: &mut Vec<Parse>) -> Result<(), Error> {
+    let mut closing_paren_idx = None;
+    let mut n_nested_parens = 0u8;
+    for i in (0..tokens.len()).rev() {
+        match (&tokens[i], closing_paren_idx) {
+            (Parse::Tok(Token::Operator(op)), None) if op == ")" => closing_paren_idx = Some(i),
+            (Parse::Tok(Token::Operator(op)), None) if op == "(" => return Err(Error::SyntaxError(String::from("unmatched \"(\""))),
+            (Parse::Tok(Token::Operator(op)), Some(_)) if op == ")" => n_nested_parens += 1,
+            (Parse::Tok(Token::Operator(op)), Some(_)) if op == "(" && n_nested_parens > 0 => n_nested_parens -= 1,
+            (Parse::Tok(Token::Operator(op)), Some(closei)) if op == "(" && n_nested_parens == 0 => {
+                let mut removed = tokens.splice(i..=closei, [Parse::Temp]).skip(1).collect::<Vec<_>>();
+                removed.pop();
+                trim_spaces(&mut removed);
+                if removed.len() == 0 {
+                    return Err(Error::SyntaxError(String::from("empty parentheses")));
+                }
+                tokens[i] = Parse::Expr(parse_impl(removed)?);
+                closing_paren_idx = None;
+            },
+            _ => (),
+        }
+    }
+    if closing_paren_idx.is_some() {
+        return Err(Error::SyntaxError(String::from("unmatched \")\"")));
+    }
+    Ok(())
 }
 
 fn parse_unary_ops(tokens: &mut Vec<Parse>) {
@@ -172,6 +204,29 @@ mod tests {
     #[test]
     fn syntax_errors() {
         expect_syntax_error("1++");
+        expect_syntax_error("()");
+        expect_syntax_error("( )");
+        expect_syntax_error("(() ( ) )");
+    }
+
+    #[test]
+    fn parse_parens() {
+        expect_value(Value::Integer(1), "(1)");
+        expect_value(Value::Integer(1), " ( 1 ) ");
+        expect_value(Value::Integer(1), "(( ( 1 ) ) ) ");
+        expect_value(Value::Integer(2), "(1) + (1)");
+        expect_value(Value::Integer(0), "(1) - (1)");
+        expect_value(Value::Integer(-2), "(1) - (1 + 2)");
+        expect_value(Value::Integer(-3), "-(1 + 2)");
+        expect_value(Value::Integer(16), "(10+2)-(-5 + (3 - 2))");
+        expect_syntax_error("1)");
+        expect_syntax_error(" 1 ) ");
+        expect_syntax_error("(1");
+        expect_syntax_error(" ( 1 ");
+        expect_syntax_error("(1))");
+        expect_syntax_error("((1)");
+        expect_syntax_error(")(");
+        expect_syntax_error(")1(");
     }
 
     #[test]
