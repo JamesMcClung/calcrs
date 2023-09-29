@@ -17,7 +17,7 @@ pub fn parse(expr: &str) -> Result<Expression, Error> {
     let mut tokens = token::tokenize(expr)?.into_iter().map(|tok| Parse::Tok(tok)).collect::<Vec<_>>();
     parse_whole_numbers(&mut tokens);
     parse_unary_ops(&mut tokens);
-    parse_sums(&mut tokens);
+    parse_sums_differences(&mut tokens);
     trim_spaces(&mut tokens);
     get_result(tokens)
 }
@@ -94,7 +94,7 @@ fn parse_unary_ops(tokens: &mut Vec<Parse>) {
     }
 }
 
-fn parse_sums(tokens: &mut Vec<Parse>) {
+fn parse_sums_differences(tokens: &mut Vec<Parse>) {
     let mut lhs_idx = None;
     let mut found_op = false;
     let mut i = 0;
@@ -102,7 +102,7 @@ fn parse_sums(tokens: &mut Vec<Parse>) {
         match (&tokens[i], lhs_idx, found_op) {
             (Parse::Expr { .. }, _, false) => lhs_idx = Some(i),
             (Parse::Tok(Token::Operator(op)), Some(_), false) => {
-                if op == "+" {
+                if op == "+" || op == "-" {
                     found_op = true;
                 } else {
                     lhs_idx = None;
@@ -120,10 +120,10 @@ fn parse_sums(tokens: &mut Vec<Parse>) {
                 debug_assert!(removed.next().is_none(), "splice should have exactly 3 elements");
                 drop(removed);
 
-                if let (Parse::Expr(lhs_expr), Parse::Tok(Token::Operator(_)), Parse::Expr(rhs_expr)) = (lhs, op, rhs) {
+                if let (Parse::Expr(lhs_expr), Parse::Tok(Token::Operator(op)), Parse::Expr(rhs_expr)) = (lhs, op, rhs) {
                     let lhs = Box::new(lhs_expr);
                     let rhs = Box::new(rhs_expr);
-                    tokens[lhsi] = Parse::Expr(Expression::Sum(lhs, rhs));
+                    tokens[lhsi] = Parse::Expr(if op == "+" { Expression::Sum(lhs, rhs) } else { Expression::Difference(lhs, rhs) });
                     i = lhsi;
                 } else {
                     panic!("splice should have an expr, op, and expr");
