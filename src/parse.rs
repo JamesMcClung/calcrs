@@ -34,7 +34,7 @@ fn parse_tokens(tokens: &[Token]) -> Result<Expression, Error> {
             return Ok(expr);
         }
     }
-    Err(Error::SyntaxError(tokens.into_iter().map(|tok| tok.to_str()).collect()))
+    Err(Error::SyntaxError(format!("{tokens:?}")))
 }
 
 fn try_parse_integer(tokens: &[Token]) -> Result<Option<Expression>, Error> {
