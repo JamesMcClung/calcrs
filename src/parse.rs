@@ -69,6 +69,7 @@ fn parse_parens(tokens: &mut Vec<Parse>) -> Result<(), Error> {
     for i in (0..tokens.len()).rev() {
         match (&tokens[i], closing_paren_idx) {
             (Parse::Tok(Token::Operator(op)), None) if op == ")" => closing_paren_idx = Some(i),
+            (Parse::Tok(Token::Operator(op)), None) if op == "(" => return Err(Error::SyntaxError(String::from("unmatched \"(\""))),
             (Parse::Tok(Token::Operator(op)), Some(_)) if op == ")" => n_nested_parens += 1,
             (Parse::Tok(Token::Operator(op)), Some(_)) if op == "(" && n_nested_parens > 0 => n_nested_parens -= 1,
             (Parse::Tok(Token::Operator(op)), Some(closei)) if op == "(" && n_nested_parens == 0 => {
@@ -79,6 +80,9 @@ fn parse_parens(tokens: &mut Vec<Parse>) -> Result<(), Error> {
             },
             _ => (),
         }
+    }
+    if closing_paren_idx.is_some() {
+        return Err(Error::SyntaxError(String::from("unmatched \")\"")));
     }
     Ok(())
 }
