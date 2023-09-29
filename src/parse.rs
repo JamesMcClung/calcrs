@@ -28,7 +28,17 @@ fn get_result(mut tokens: Vec<Parse>) -> Result<Expression, Error> {
             return Ok(expr);
         }
     }
-    Err(Error::SyntaxError(format!("{tokens:?}")))
+    let mut message = None;
+    for i in 0..=tokens.len() {
+        match (tokens.get(i), &mut message) {
+            (Some(Parse::Temp), _) => panic!("Temps aren't allowed to persist"),
+            (Some(Parse::Tok(tok)), None) => message = Some(tok.to_str().to_string()),
+            (Some(Parse::Tok(tok)), Some(message)) => message.push_str(tok.to_str()),
+            (Some(Parse::Expr(_)) | None, Some(message)) => return Err(Error::SyntaxError(message.trim().to_string())),
+            _ => (),
+        }
+    }
+    unreachable!();
 }
 
 fn trim_spaces(tokens: &mut Vec<Parse>) {
