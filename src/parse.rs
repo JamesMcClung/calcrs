@@ -19,6 +19,10 @@ pub fn parse(expr: &str) -> Result<Expression, Error> {
     parse_unary_ops(&mut tokens);
     parse_sums(&mut tokens);
     trim_spaces(&mut tokens);
+    get_result(tokens)
+}
+
+fn get_result(mut tokens: Vec<Parse>) -> Result<Expression, Error> {
     if tokens.len() == 1 {
         if let Parse::Expr(expr) = tokens.pop().expect("just checked size") {
             return Ok(expr);
