@@ -6,6 +6,12 @@ use error::Error;
 pub use expr::{Expression, Value};
 use token::Token;
 
+#[derive(Debug)]
+enum Parse {
+    Tok(Token),
+    Expr(Expression),
+}
+
 pub fn parse(expr: &str) -> Result<Expression, Error> {
     parse_tokens(&token::tokenize(expr)?)
 }
