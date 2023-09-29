@@ -14,7 +14,10 @@ enum Parse {
 }
 
 pub fn parse(expr: &str) -> Result<Expression, Error> {
-    let mut tokens = token::tokenize(expr)?.into_iter().map(|tok| Parse::Tok(tok)).collect::<Vec<_>>();
+    parse_impl(token::tokenize(expr)?.into_iter().map(|tok| Parse::Tok(tok)).collect::<Vec<_>>())
+}
+
+fn parse_impl(mut tokens: Vec<Parse>) -> Result<Expression, Error> {
     parse_whole_numbers(&mut tokens);
     parse_unary_ops(&mut tokens);
     parse_sums_differences(&mut tokens);
