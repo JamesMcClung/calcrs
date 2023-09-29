@@ -156,6 +156,11 @@ mod tests {
     }
 
     #[test]
+    fn syntax_errors() {
+        expect_syntax_error("1++");
+    }
+
+    #[test]
     fn parse_int() {
         expect_value(Value::Integer(0), "0");
         expect_value(Value::Integer(0), " 0 ");
