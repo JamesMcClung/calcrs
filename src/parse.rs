@@ -10,10 +10,20 @@ use token::Token;
 enum Parse {
     Tok(Token),
     Expr(Expression),
+    Temp,
 }
 
 pub fn parse(expr: &str) -> Result<Expression, Error> {
-    parse_tokens(&token::tokenize(expr)?.into_iter().map(|tok| Parse::Tok(tok)).collect::<Vec<_>>())
+    let mut tokens = token::tokenize(expr)?.into_iter().map(|tok| Parse::Tok(tok)).collect::<Vec<_>>();
+    parse_whole_numbers(&mut tokens);
+    parse_unary_ops(&mut tokens);
+    parse_sums(&mut tokens);
+    if tokens.len() == 1 {
+        if let Parse::Expr(expr) = tokens.pop().expect("just checked size") {
+            return Ok(expr);
+        }
+    }
+    Err(Error::SyntaxError(format!("{tokens:?}")))
 }
 
 fn trim_spaces(tokens: &[Parse]) -> &[Parse] {
@@ -34,6 +44,93 @@ fn parse_tokens(tokens: &[Parse]) -> Result<Expression, Error> {
         }
     }
     Err(Error::SyntaxError(format!("{tokens:?}")))
+}
+
+fn parse_whole_numbers(tokens: &mut Vec<Parse>) {
+    for tok in tokens {
+        if let Parse::Tok(Token::WholeNumber(num)) = tok {
+            let num = num.parse().expect("num should always be a sequence of digits");
+            *tok = Parse::Expr(Expression::Constant(Value::Integer(num)))
+        }
+    }
+}
+
+fn parse_unary_ops(tokens: &mut Vec<Parse>) {
+    let mut expr_idx = None;
+    for i in (0..tokens.len()).rev() {
+        match (&tokens[i], expr_idx) {
+            (Parse::Expr(_), _) => expr_idx = Some(i),
+            (Parse::Tok(Token::Operator(op)), Some(expri)) => {
+                if !(op == "+" || op == "-") {
+                    expr_idx = None;
+                    continue;
+                }
+                match &tokens[usize::saturating_sub(i, 2)..i] {
+                    [_, Parse::Tok(Token::Operator(_))] | [Parse::Tok(Token::Operator(_))] => expr_idx = None,
+                    [] | [Parse::Tok(Token::Space)] | [Parse::Tok(Token::Operator(_)), Parse::Tok(Token::Space)] => {
+                        let mut removed = tokens.splice(i..=expri, [Parse::Temp]).filter(|tok| !matches!(tok, Parse::Tok(Token::Space)));
+                        let op = removed.next().expect("splice should have exactly 2 elements");
+                        let expr = removed.next().expect("splice should have exactly 2 elements");
+                        debug_assert!(removed.next().is_none(), "splice should have exactly 2 elements");
+                        drop(removed);
+
+                        if let (Parse::Tok(Token::Operator(op)), Parse::Expr(expr)) = (op, expr) {
+                            let expr = Box::new(expr);
+                            tokens[i] = Parse::Expr(if op == "+" { Expression::UnaryPlus(expr) } else { Expression::UnaryMinus(expr) })
+                        } else {
+                            panic!("splice should have an op and an expr");
+                        }
+                        expr_idx = Some(i);
+                    },
+                    _ => (),
+                }
+            },
+            _ => (),
+        }
+    }
+}
+
+fn parse_sums(tokens: &mut Vec<Parse>) {
+    let mut lhs_idx = None;
+    let mut found_op = false;
+    let mut i = 0;
+    while i < tokens.len() {
+        match (&tokens[i], lhs_idx, found_op) {
+            (Parse::Expr { .. }, _, false) => lhs_idx = Some(i),
+            (Parse::Tok(Token::Operator(op)), Some(_), false) => {
+                if op == "+" {
+                    found_op = true;
+                } else {
+                    lhs_idx = None;
+                }
+            },
+            (Parse::Tok(Token::Operator(_)), Some(_), true) => {
+                found_op = false;
+                lhs_idx = None;
+            },
+            (Parse::Expr { .. }, Some(lhsi), true) => {
+                let mut removed = tokens.splice(lhsi..=i, [Parse::Temp]).filter(|tok| !matches!(tok, Parse::Tok(Token::Space)));
+                let lhs = removed.next().expect("splice should have exactly 3 elements");
+                let op = removed.next().expect("splice should have exactly 3 elements");
+                let rhs = removed.next().expect("splice should have exactly 3 elements");
+                debug_assert!(removed.next().is_none(), "splice should have exactly 3 elements");
+                drop(removed);
+
+                if let (Parse::Expr(lhs_expr), Parse::Tok(Token::Operator(_)), Parse::Expr(rhs_expr)) = (lhs, op, rhs) {
+                    let lhs = Box::new(lhs_expr);
+                    let rhs = Box::new(rhs_expr);
+                    tokens[lhsi] = Parse::Expr(Expression::Sum(lhs, rhs));
+                    i = lhsi;
+                } else {
+                    panic!("splice should have an expr, op, and expr");
+                }
+
+                found_op = false;
+            },
+            _ => (),
+        }
+        i += 1;
+    }
 }
 
 fn try_parse_integer(tokens: &[Parse]) -> Result<Option<Expression>, Error> {
