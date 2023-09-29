@@ -34,7 +34,7 @@ fn get_result(mut tokens: Vec<Parse>) -> Result<Expression, Error> {
             (Some(Parse::Temp), _) => panic!("Temps aren't allowed to persist"),
             (Some(Parse::Tok(tok)), None) => message = Some(tok.to_str().to_string()),
             (Some(Parse::Tok(tok)), Some(message)) => message.push_str(tok.to_str()),
-            (Some(Parse::Expr(_)) | None, Some(message)) => return Err(Error::SyntaxError(message.trim().to_string())),
+            (Some(Parse::Expr(_)) | None, Some(message)) => return Err(Error::SyntaxError(format!("invalid syntax \"{}\"", message.trim()))),
             _ => (),
         }
     }
