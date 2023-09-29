@@ -75,6 +75,10 @@ fn parse_parens(tokens: &mut Vec<Parse>) -> Result<(), Error> {
             (Parse::Tok(Token::Operator(op)), Some(closei)) if op == "(" && n_nested_parens == 0 => {
                 let mut removed = tokens.splice(i..=closei, [Parse::Temp]).skip(1).collect::<Vec<_>>();
                 removed.pop();
+                trim_spaces(&mut removed);
+                if removed.len() == 0 {
+                    return Err(Error::SyntaxError(String::from("empty parentheses")));
+                }
                 tokens[i] = Parse::Expr(parse_impl(removed)?);
                 closing_paren_idx = None;
             },
