@@ -13,20 +13,19 @@ enum Parse {
 }
 
 pub fn parse(expr: &str) -> Result<Expression, Error> {
-    parse_tokens(&token::tokenize(expr)?)
+    parse_tokens(&token::tokenize(expr)?.into_iter().map(|tok| Parse::Tok(tok)).collect::<Vec<_>>())
 }
 
-fn trim_spaces(mut tokens: &[Token]) -> &[Token] {
-    if tokens.starts_with(&[Token::Space]) {
-        tokens = &tokens[1..];
+fn trim_spaces(tokens: &[Parse]) -> &[Parse] {
+    match tokens {
+        [Parse::Tok(Token::Space), toks @ .., Parse::Tok(Token::Space)] => toks,
+        [Parse::Tok(Token::Space), toks @ ..] => toks,
+        [toks @ .., Parse::Tok(Token::Space)] => toks,
+        toks => toks,
     }
-    if tokens.ends_with(&[Token::Space]) {
-        tokens = &tokens[..tokens.len() - 1];
-    }
-    tokens
 }
 
-fn parse_tokens(tokens: &[Token]) -> Result<Expression, Error> {
+fn parse_tokens(tokens: &[Parse]) -> Result<Expression, Error> {
     let tokens = trim_spaces(tokens);
     let parse_seq = [try_parse_integer, try_parse_sum, try_parse_unary_plus, try_parse_unary_minus];
     for try_parse in parse_seq {
@@ -37,47 +36,47 @@ fn parse_tokens(tokens: &[Token]) -> Result<Expression, Error> {
     Err(Error::SyntaxError(format!("{tokens:?}")))
 }
 
-fn try_parse_integer(tokens: &[Token]) -> Result<Option<Expression>, Error> {
+fn try_parse_integer(tokens: &[Parse]) -> Result<Option<Expression>, Error> {
     Ok(match tokens {
-        [Token::WholeNumber(num)] => Some(Expression::Constant(Value::Integer(num.parse().expect("num should always be a sequence of digits")))),
+        [Parse::Tok(Token::WholeNumber(num))] => Some(Expression::Constant(Value::Integer(num.parse().expect("num should always be a sequence of digits")))),
         _ => None,
     })
 }
 
-fn try_parse_unary_plus(tokens: &[Token]) -> Result<Option<Expression>, Error> {
-    Ok(match tokens {
-        [_] => None,
-        [_, Token::Operator(op), ..] if op == "+" || op == "-" => None,
-        [Token::Operator(op), rest @ ..] if op == "+" => Some(Expression::UnaryPlus(Box::new(parse_tokens(rest)?))),
-        _ => None,
-    })
-}
-
-fn try_parse_unary_minus(tokens: &[Token]) -> Result<Option<Expression>, Error> {
+fn try_parse_unary_plus(tokens: &[Parse]) -> Result<Option<Expression>, Error> {
     Ok(match tokens {
         [_] => None,
-        [_, Token::Operator(op), ..] if op == "+" || op == "-" => None,
-        [Token::Operator(op), rest @ ..] if op == "-" => Some(Expression::UnaryMinus(Box::new(parse_tokens(rest)?))),
+        [_, Parse::Tok(Token::Operator(op)), ..] if op == "+" || op == "-" => None,
+        [Parse::Tok(Token::Operator(op)), rest @ ..] if op == "+" => Some(Expression::UnaryPlus(Box::new(parse_tokens(rest)?))),
         _ => None,
     })
 }
 
-fn try_parse_sum(tokens: &[Token]) -> Result<Option<Expression>, Error> {
+fn try_parse_unary_minus(tokens: &[Parse]) -> Result<Option<Expression>, Error> {
+    Ok(match tokens {
+        [_] => None,
+        [_, Parse::Tok(Token::Operator(op)), ..] if op == "+" || op == "-" => None,
+        [Parse::Tok(Token::Operator(op)), rest @ ..] if op == "-" => Some(Expression::UnaryMinus(Box::new(parse_tokens(rest)?))),
+        _ => None,
+    })
+}
+
+fn try_parse_sum(tokens: &[Parse]) -> Result<Option<Expression>, Error> {
     if tokens.len() < 3 {
         return Ok(None);
     }
     let mut found_lhs = false;
     for i in 1..(tokens.len() - 1) {
-        if matches!(tokens[i - 1], Token::Identifier(_) | Token::WholeNumber(_)) {
+        if matches!(tokens[i - 1], Parse::Tok(Token::Identifier(_) | Token::WholeNumber(_))) {
             found_lhs = true;
         }
         if !found_lhs {
             continue;
         }
         match &tokens[i - 1..=i + 1] {
-            [Token::Operator(_), _, _] => (),
-            [_, _, Token::Operator(_)] => (),
-            [_, Token::Operator(op), _] if op == "+" => return Ok(Some(Expression::Sum(Box::new(parse_tokens(&tokens[..i])?), Box::new(parse_tokens(&tokens[i + 1..])?)))),
+            [Parse::Tok(Token::Operator(_)), _, _] => (),
+            [_, _, Parse::Tok(Token::Operator(_))] => (),
+            [_, Parse::Tok(Token::Operator(op)), _] if op == "+" => return Ok(Some(Expression::Sum(Box::new(parse_tokens(&tokens[..i])?), Box::new(parse_tokens(&tokens[i + 1..])?)))),
             _ => (),
         }
     }
