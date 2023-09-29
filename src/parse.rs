@@ -18,6 +18,7 @@ pub fn parse(expr: &str) -> Result<Expression, Error> {
     parse_whole_numbers(&mut tokens);
     parse_unary_ops(&mut tokens);
     parse_sums(&mut tokens);
+    trim_spaces(&mut tokens);
     if tokens.len() == 1 {
         if let Parse::Expr(expr) = tokens.pop().expect("just checked size") {
             return Ok(expr);
@@ -26,12 +27,12 @@ pub fn parse(expr: &str) -> Result<Expression, Error> {
     Err(Error::SyntaxError(format!("{tokens:?}")))
 }
 
-fn trim_spaces(tokens: &[Parse]) -> &[Parse] {
-    match tokens {
-        [Parse::Tok(Token::Space), toks @ .., Parse::Tok(Token::Space)] => toks,
-        [Parse::Tok(Token::Space), toks @ ..] => toks,
-        [toks @ .., Parse::Tok(Token::Space)] => toks,
-        toks => toks,
+fn trim_spaces(tokens: &mut Vec<Parse>) {
+    if matches!(tokens.last(), Some(Parse::Tok(Token::Space))) {
+        tokens.pop();
+    }
+    if matches!(tokens.first(), Some(Parse::Tok(Token::Space))) {
+        tokens.remove(0);
     }
 }
 
