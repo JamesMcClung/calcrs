@@ -80,6 +80,7 @@ fn find_identifiers_impl(pat: &mut Pat, ids: &mut Vec<Ident>) {
             ids.push(std::mem::replace(&mut pat.ident, Ident::new(&ident_underscore, Span::call_site())));
         },
         Pat::Tuple(pat) => pat.elems.pairs_mut().for_each(|mut pair| find_identifiers_impl(pair.value_mut(), ids)),
+        Pat::TupleStruct(pat) => pat.elems.pairs_mut().for_each(|mut pair| find_identifiers_impl(pair.value_mut(), ids)),
         Pat::Struct(pat) => pat.fields.pairs_mut().for_each(|mut pair| {
             pair.value_mut().colon_token = Some(syn::token::Colon([Span::call_site()]));
             find_identifiers_impl(&mut pair.value_mut().pat, ids);
