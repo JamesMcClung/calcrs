@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 termion = "2.0.1"
+let_match = { path = "let_match" }
 
 [workspace]
 members = [".", "let_match"]
