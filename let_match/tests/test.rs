@@ -34,3 +34,12 @@ fn let_match_struct() {
     let_match!(TestStruct { x: a, .. }, TestStruct { x: 1, y: "hi" });
     assert_eq!(a, 1);
 }
+
+#[test]
+fn let_match_tuplestruct() {
+    struct TestTupleStruct(u8, bool);
+
+    let_match!(TestTupleStruct(x, y), TestTupleStruct(4, true));
+    assert_eq!(x, 4);
+    assert_eq!(y, true);
+}
