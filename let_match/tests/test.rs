@@ -67,3 +67,15 @@ fn let_match_enum() {
     assert_eq!(x, 'a');
     assert_eq!(y, -3);
 }
+
+#[test]
+#[should_panic]
+fn let_match_wrong_variant1() {
+    let_match!(Some(_x), Option::<u8>::None);
+}
+
+#[test]
+#[should_panic]
+fn let_match_wrong_variant2() {
+    let_match!(Ok(_x), Result::<u8, u8>::Err(3));
+}
