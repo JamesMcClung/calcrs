@@ -69,6 +69,41 @@ fn let_match_enum() {
 }
 
 #[test]
+fn let_match_slice() {
+    let_match!([x, y, z], [1, 2, 3]);
+    assert_eq!(x, 1);
+    assert_eq!(y, 2);
+    assert_eq!(z, 3);
+
+    let_match!([x, y @ ..], [1, 2, 3]);
+    assert_eq!(x, 1);
+    assert_eq!(y, [2, 3]);
+
+    let_match!([x, y @ ..], [1]);
+    assert_eq!(x, 1);
+    assert_eq!(y, []);
+
+    let_match!([x @ .., y], [1]);
+    assert_eq!(x, []);
+    assert_eq!(y, 1);
+
+    let_match!([x, y @ .., z], [1, 2]);
+    assert_eq!(x, 1);
+    assert_eq!(y, []);
+    assert_eq!(z, 2);
+
+    let_match!([x, y @ .., z], [1, 2, 3, 4, 5]);
+    assert_eq!(x, 1);
+    assert_eq!(y, [2, 3, 4]);
+    assert_eq!(z, 5);
+
+    let v = vec![1, 2, 3, 4, 5];
+    let_match!([x, y], &v[1..3]);
+    assert_eq!(*x, 2);
+    assert_eq!(*y, 3);
+}
+
+#[test]
 #[should_panic]
 fn let_match_wrong_variant1() {
     let_match!(Some(_x), Option::<u8>::None);
