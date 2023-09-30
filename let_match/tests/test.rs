@@ -43,3 +43,27 @@ fn let_match_tuplestruct() {
     assert_eq!(x, 4);
     assert_eq!(y, true);
 }
+
+#[test]
+fn let_match_enum() {
+    enum TestEnum {
+        TupleEnum1(u8),
+        TupleEnum2(u8, bool),
+        StructEnum { x: i8, y: char },
+    }
+
+    let_match!(TestEnum::TupleEnum1(x), TestEnum::TupleEnum1(4));
+    assert_eq!(x, 4);
+
+    let_match!(TestEnum::TupleEnum2(x, y), TestEnum::TupleEnum2(3, false));
+    assert_eq!(x, 3);
+    assert_eq!(y, false);
+
+    let_match!(TestEnum::StructEnum { x, y }, TestEnum::StructEnum { x: -3, y: 'a' });
+    assert_eq!(x, -3);
+    assert_eq!(y, 'a');
+
+    let_match!(TestEnum::StructEnum { y: x, x: y }, TestEnum::StructEnum { x: -3, y: 'a' });
+    assert_eq!(x, 'a');
+    assert_eq!(y, -3);
+}
