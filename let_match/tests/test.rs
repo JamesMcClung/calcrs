@@ -104,6 +104,15 @@ fn let_match_slice() {
 }
 
 #[test]
+fn let_match_nested() {
+    let_match!([Ok([Some(x), y]), z @ .., Err((w, _))], [Ok([Some('a'), None]), Ok([None, None]), Err((1, 2))]);
+    assert_eq!(x, 'a');
+    assert_eq!(y, None);
+    assert_eq!(z, [Ok([None, None])]);
+    assert_eq!(w, 1);
+}
+
+#[test]
 #[should_panic]
 fn let_match_wrong_variant1() {
     let_match!(Some(_x), Option::<u8>::None);
