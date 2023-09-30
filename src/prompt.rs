@@ -66,11 +66,7 @@ impl<'a, T: Write, K: Iterator<Item = Key>> Iterator for LinesIter<'a, T, K> {
         set_input_state(&mut self.terminal, &self.prompter.prompt, &key_handler.input, key_handler.cursor_pos);
 
         loop {
-            let c = self.keys.next();
-            if let None = c {
-                return None;
-            }
-            match c.expect("just handled none case") {
+            match self.keys.next()? {
                 Key::Char('\n') => {
                     write(&mut self.terminal, "\n\r");
                     let line_pos = key_handler.line_pos;
