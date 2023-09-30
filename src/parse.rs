@@ -4,6 +4,7 @@ pub mod token;
 
 use error::Error;
 pub use expr::{Expression, Value};
+use let_match::let_match;
 use token::Token;
 
 #[derive(Debug)]
@@ -105,17 +106,13 @@ fn parse_unary_ops(tokens: &mut Vec<Parse>) {
                     [_, Parse::Tok(Token::Operator(_))] | [Parse::Tok(Token::Operator(_))] => expr_idx = None,
                     [] | [Parse::Tok(Token::Space)] | [Parse::Tok(Token::Operator(_)), Parse::Tok(Token::Space)] => {
                         let mut removed = tokens.splice(i..=expri, [Parse::Temp]).filter(|tok| !matches!(tok, Parse::Tok(Token::Space)));
-                        let op = removed.next().expect("splice should have exactly 2 elements");
-                        let expr = removed.next().expect("splice should have exactly 2 elements");
+                        let_match!(Some(Parse::Tok(Token::Operator(op))) = removed.next());
+                        let_match!(Some(Parse::Expr(expr)) = removed.next());
                         debug_assert!(removed.next().is_none(), "splice should have exactly 2 elements");
                         drop(removed);
 
-                        if let (Parse::Tok(Token::Operator(op)), Parse::Expr(expr)) = (op, expr) {
-                            let expr = Box::new(expr);
-                            tokens[i] = Parse::Expr(if op == "+" { Expression::UnaryPlus(expr) } else { Expression::UnaryMinus(expr) })
-                        } else {
-                            panic!("splice should have an op and an expr");
-                        }
+                        let expr = Box::new(expr);
+                        tokens[i] = Parse::Expr(if op == "+" { Expression::UnaryPlus(expr) } else { Expression::UnaryMinus(expr) });
                         expr_idx = Some(i);
                     },
                     _ => (),
@@ -146,21 +143,17 @@ fn parse_sums_differences(tokens: &mut Vec<Parse>) {
             },
             (Parse::Expr { .. }, Some(lhsi), true) => {
                 let mut removed = tokens.splice(lhsi..=i, [Parse::Temp]).filter(|tok| !matches!(tok, Parse::Tok(Token::Space)));
-                let lhs = removed.next().expect("splice should have exactly 3 elements");
-                let op = removed.next().expect("splice should have exactly 3 elements");
-                let rhs = removed.next().expect("splice should have exactly 3 elements");
+                let_match!(Some(Parse::Expr(lhs_expr)) = removed.next());
+                let_match!(Some(Parse::Tok(Token::Operator(op))) = removed.next());
+                let_match!(Some(Parse::Expr(rhs_expr)) = removed.next());
                 debug_assert!(removed.next().is_none(), "splice should have exactly 3 elements");
                 drop(removed);
 
-                if let (Parse::Expr(lhs_expr), Parse::Tok(Token::Operator(op)), Parse::Expr(rhs_expr)) = (lhs, op, rhs) {
-                    let lhs = Box::new(lhs_expr);
-                    let rhs = Box::new(rhs_expr);
-                    tokens[lhsi] = Parse::Expr(if op == "+" { Expression::Sum(lhs, rhs) } else { Expression::Difference(lhs, rhs) });
-                    i = lhsi;
-                } else {
-                    panic!("splice should have an expr, op, and expr");
-                }
+                let lhs = Box::new(lhs_expr);
+                let rhs = Box::new(rhs_expr);
+                tokens[lhsi] = Parse::Expr(if op == "+" { Expression::Sum(lhs, rhs) } else { Expression::Difference(lhs, rhs) });
 
+                i = lhsi;
                 found_op = false;
             },
             _ => (),
