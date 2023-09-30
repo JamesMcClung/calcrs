@@ -6,7 +6,7 @@ use syn::{self, Expr, Pat, Token};
 
 struct LetMatchInput {
     pat: Pat,
-    _comma: Token![,],
+    _comma: Token![=],
     expr: Expr,
 }
 
